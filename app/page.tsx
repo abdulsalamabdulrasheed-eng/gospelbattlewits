@@ -45,9 +45,12 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50 pb-24">
       <div className="bg-black text-white py-12 px-6 text-center">
         <h1 className="text-4xl font-black mb-4 tracking-tight">VOTE YOUR FAVOURITE</h1>
-        <p className="text-gray-400 max-w-lg mx-auto">
+        <p className="text-gray-400 max-w-lg mx-auto mb-6">
           The top 20 contestants with the highest votes will battle live on stage.
         </p>
+        <Link href="/register" className="inline-block bg-white text-black font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition">
+          Apply to Compete (₦2,000)
+        </Link>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
