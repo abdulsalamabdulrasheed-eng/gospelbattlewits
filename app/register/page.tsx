@@ -11,12 +11,14 @@ declare global {
   }
 }
 
+// Match your exact Supabase bucket name here
+const BUCKET_NAME = 'contestants media';
+
 export default function Register() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [success, setSuccess] = useState(false);
   
   const [formData, setFormData] = useState({
     full_name: '',
@@ -58,7 +60,6 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // 1. Check if registration is open and if cap is reached
       const { count } = await supabase
         .from('contestants')
         .select('*', { count: 'exact', head: true });
@@ -67,32 +68,33 @@ export default function Register() {
         throw new Error('Registration is full. We have reached 2,000 contestants.');
       }
 
-      // 2. Upload Photo
       setUploading(true);
+      
+      // 1. Upload Photo
       const photoExt = photoFile.name.split('.').pop();
       const photoName = `${Date.now()}-${formData.email}.${photoExt}`;
       const { error: photoError } = await supabase.storage
-        .from('contestant-media')
+        .from(BUCKET_NAME) // Using the exact bucket name
         .upload(`photos/${photoName}`, photoFile);
       
       if (photoError) throw new Error('Photo upload failed: ' + photoError.message);
       
-      const { data: photoData } = supabase.storage.from('contestant-media').getPublicUrl(`photos/${photoName}`);
+      const { data: photoData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(`photos/${photoName}`);
 
-      // 3. Upload Video
+      // 2. Upload Video
       const videoExt = videoFile.name.split('.').pop();
       const videoName = `${Date.now()}-${formData.email}.${videoExt}`;
       const { error: videoError } = await supabase.storage
-        .from('contestant-media')
+        .from(BUCKET_NAME)
         .upload(`videos/${videoName}`, videoFile);
       
       if (videoError) throw new Error('Video upload failed: ' + videoError.message);
       
-      const { data: videoData } = supabase.storage.from('contestant-media').getPublicUrl(`videos/${videoName}`);
+      const { data: videoData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(`videos/${videoName}`);
 
       setUploading(false);
 
-      // 4. Trigger Paystack
+      // 3. Trigger Paystack
       if (!window.PaystackPop) throw new Error('Paystack is loading. Please try again.');
 
       const handler = window.PaystackPop.setup({
@@ -114,7 +116,6 @@ export default function Register() {
           dob: formData.dob,
         },
         callback: function (response: any) {
-          // Payment successful, redirect to a processing page while webhook handles DB insert
           router.push('/register/success');
         },
         onClose: function () {
