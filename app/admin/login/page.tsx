@@ -16,24 +16,24 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
+    // Use Promise.race to force a timeout even if the lock bypass fails
+    const loginPromise = supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password,
+    });
+
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Login timed out. Please refresh and try again.')), 12000)
+    );
+
     try {
-      // Force a timeout so the browser never hangs indefinitely
-      const loginPromise = supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password,
-      });
-
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timed out. Please check your network or try again.')), 15000)
-      );
-
       const { data, error: authError } = await Promise.race([loginPromise, timeoutPromise]) as any;
 
       if (authError) {
         setError(authError.message);
         setLoading(false);
       } else {
-        // Success: Force a hard redirect to the dashboard
+        // Force a full page reload to ensure the session is picked up correctly
         window.location.href = '/admin';
       }
     } catch (err: any) {
