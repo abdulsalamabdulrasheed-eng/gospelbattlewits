@@ -16,17 +16,29 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      // Add a 10-second timeout to prevent infinite hanging
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out. Please check your internet connection or Supabase keys.')), 10000)
+      );
 
-    if (error) {
-      setError(error.message);
+      const loginPromise = supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
+
+      const { error } = await Promise.race([loginPromise, timeout]) as any;
+
+      if (error) {
+        setError(error.message);
+      } else {
+        router.push('/admin');
+        router.refresh();
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
       setLoading(false);
-    } else {
-      router.push('/admin');
-      router.refresh();
     }
   };
 
@@ -40,7 +52,7 @@ export default function AdminLogin() {
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm font-semibold text-center">
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm font-semibold text-center border border-red-200">
             {error}
           </div>
         )}
@@ -71,9 +83,14 @@ export default function AdminLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white font-bold py-3 rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
+            className="w-full bg-black text-white font-bold py-3 rounded-lg hover:bg-gray-800 transition disabled:opacity-50 flex justify-center items-center gap-2"
           >
-            {loading ? 'Authenticating...' : 'Secure Login'}
+            {loading ? (
+              <>
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                Authenticating...
+              </>
+            ) : 'Secure Login'}
           </button>
         </form>
       </div>
