@@ -7,7 +7,13 @@ export default function ManageContestants() {
   const [contestants, setContestants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchContestants(); }, []);
+  useEffect(() => {
+    fetchContestants();
+    
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(fetchContestants, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchContestants = async () => {
     const { data } = await supabase.from('contestants').select('*').order('created_at', { ascending: false });
@@ -17,7 +23,7 @@ export default function ManageContestants() {
 
   const updateStatus = async (id: string, status: string) => {
     await supabase.from('contestants').update({ status }).eq('id', id);
-    fetchContestants();
+    fetchContestants(); // Refresh immediately after click
   };
 
   if (loading) return <div className="p-10 font-bold">Loading...</div>;

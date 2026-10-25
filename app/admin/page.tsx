@@ -11,11 +11,15 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData();
+    
+    // Auto-refresh every 10 seconds to catch new registrations
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
     // Fetch contestants
-    const { data: contestants } = await supabase.from('contestants').select('*');
+    const { data: contestants } = await supabase.from('contestants').select('*').order('created_at', { ascending: false });
     
     // Fetch revenue
     const { data: tx } = await supabase.from('transactions').select('amount').eq('status', 'success');
