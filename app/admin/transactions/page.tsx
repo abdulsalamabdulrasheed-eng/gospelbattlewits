@@ -25,20 +25,20 @@ export default function Transactions() {
   if (loading) return <div className="p-10 font-bold">Loading...</div>;
 
   return (
-    <div className="p-6 md:p-10 max-w-6xl mx-auto">
-      <div className="flex justify-between items-end mb-8">
+    <div className="p-4 md:p-10 max-w-6xl mx-auto">
+      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-black">Transaction Ledger</h1>
           <p className="text-gray-500 mt-1">All successful Paystack payments</p>
         </div>
-        <div className="text-right">
+        <div className="text-left md:text-right bg-white md:bg-transparent p-4 md:p-0 rounded-xl border md:border-none">
           <div className="text-sm font-bold text-gray-500 uppercase">Total Collected</div>
           <div className="text-3xl font-black text-green-600">₦{totalRevenue.toLocaleString()}</div>
         </div>
       </div>
 
       <div className="bg-white border rounded-2xl shadow-sm overflow-hidden overflow-x-auto">
-        <table className="w-full text-left text-sm whitespace-nowrap">
+        <table className="w-full text-left text-sm whitespace-nowrap min-w-[600px]">
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="p-4 font-bold text-gray-600">Reference</th>
