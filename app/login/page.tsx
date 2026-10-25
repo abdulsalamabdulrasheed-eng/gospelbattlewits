@@ -16,14 +16,13 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
-    // Use Promise.race to force a timeout even if the lock bypass fails
     const loginPromise = supabase.auth.signInWithPassword({
       email: email.trim(),
       password: password,
     });
 
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Login timed out. Please refresh and try again.')), 12000)
+      setTimeout(() => reject(new Error('Login timed out. Please try again.')), 12000)
     );
 
     try {
@@ -33,7 +32,6 @@ export default function AdminLogin() {
         setError(authError.message);
         setLoading(false);
       } else {
-        // Force a full page reload to ensure the session is picked up correctly
         window.location.href = '/admin';
       }
     } catch (err: any) {

@@ -10,7 +10,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/admin/login';
+    window.location.href = '/login';
   };
 
   const navItems = [
