@@ -17,27 +17,27 @@ export default function AdminLogin() {
     setError('');
 
     try {
-      // Add a 10-second timeout to prevent infinite hanging
-      const timeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timed out. Please check your internet connection or Supabase keys.')), 10000)
-      );
-
+      // Force a timeout so the browser never hangs indefinitely
       const loginPromise = supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
       });
 
-      const { error } = await Promise.race([loginPromise, timeout]) as any;
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timed out. Please check your network or try again.')), 15000)
+      );
 
-      if (error) {
-        setError(error.message);
+      const { data, error: authError } = await Promise.race([loginPromise, timeoutPromise]) as any;
+
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
       } else {
-        router.push('/admin');
-        router.refresh();
+        // Success: Force a hard redirect to the dashboard
+        window.location.href = '/admin';
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
-    } finally {
       setLoading(false);
     }
   };
