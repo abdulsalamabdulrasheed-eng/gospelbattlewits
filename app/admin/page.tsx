@@ -27,13 +27,14 @@ export default function AdminDashboard() {
   }, []);
 
   const checkAuthAndFetch = async () => {
+    // 1. Verify user is logged in
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push('/admin/login');
       return;
     }
 
-    // Fetch contestants
+    // 2. Fetch contestants
     const { data: contestantsData } = await supabase
       .from('contestants')
       .select('*')
@@ -45,15 +46,16 @@ export default function AdminDashboard() {
       setTotalVotes(votes);
     }
 
-    // Fetch revenue (example from transactions)
+    // 3. Fetch revenue from transactions table
     const { data: txData } = await supabase
       .from('transactions')
       .select('amount')
       .eq('status', 'success');
     
     if (txData) {
+      // Amount is stored in kobo, so divide by 100
       const rev = txData.reduce((sum, t) => sum + (t.amount || 0), 0);
-      setTotalRevenue(rev / 100); // Convert from kobo
+      setTotalRevenue(rev / 100); 
     }
 
     setLoading(false);
@@ -61,7 +63,7 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/admin/login');
+    window.location.href = '/admin/login';
   };
 
   const handleApprove = async (id: string) => {
@@ -74,34 +76,34 @@ export default function AdminDashboard() {
     checkAuthAndFetch();
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading Dashboard...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-bold">Loading Dashboard...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Top Bar */}
-      <div className="bg-black text-white p-4 flex justify-between items-center">
+      <div className="bg-black text-white p-4 flex justify-between items-center sticky top-0 z-50">
         <div className="font-bold text-lg">Admin Dashboard</div>
-        <button onClick={handleLogout} className="text-sm bg-gray-800 px-3 py-1 rounded hover:bg-gray-700">Logout</button>
+        <button onClick={handleLogout} className="text-sm bg-gray-800 px-4 py-2 rounded-lg font-bold hover:bg-gray-700 transition">Logout</button>
       </div>
 
-      <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6 mt-4">
         
         {/* Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <div className="text-gray-500 text-sm font-bold">Total Revenue</div>
+            <div className="text-gray-500 text-sm font-bold uppercase tracking-wider">Total Revenue</div>
             <div className="text-2xl font-black text-green-600 mt-1">₦{totalRevenue.toLocaleString()}</div>
           </div>
           <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <div className="text-gray-500 text-sm font-bold">Total Votes</div>
+            <div className="text-gray-500 text-sm font-bold uppercase tracking-wider">Total Votes</div>
             <div className="text-2xl font-black text-black mt-1">{totalVotes.toLocaleString()}</div>
           </div>
           <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <div className="text-gray-500 text-sm font-bold">Contestants</div>
+            <div className="text-gray-500 text-sm font-bold uppercase tracking-wider">Contestants</div>
             <div className="text-2xl font-black text-black mt-1">{contestants.length} / 2000</div>
           </div>
           <div className="bg-white p-4 rounded-xl border shadow-sm">
-            <div className="text-gray-500 text-sm font-bold">Pending Approval</div>
+            <div className="text-gray-500 text-sm font-bold uppercase tracking-wider">Pending</div>
             <div className="text-2xl font-black text-orange-500 mt-1">
               {contestants.filter(c => c.status === 'pending').length}
             </div>
@@ -118,8 +120,8 @@ export default function AdminDashboard() {
               <div key={c.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-gray-900">{c.stage_name || c.full_name}</span>
-                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600 font-mono">{c.contestant_id}</span>
+                    <span className="font-bold text-gray-900 text-lg">{c.stage_name || c.full_name}</span>
+                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600 font-mono border">{c.contestant_id}</span>
                   </div>
                   <div className="text-sm text-gray-500">{c.church}</div>
                 </div>
@@ -135,15 +137,15 @@ export default function AdminDashboard() {
                   
                   {c.status === 'pending' && (
                     <div className="flex gap-2">
-                      <button onClick={() => handleApprove(c.id)} className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-green-700 transition">Approve</button>
-                      <button onClick={() => handleReject(c.id)} className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-red-700 transition">Reject</button>
+                      <button onClick={() => handleApprove(c.id)} className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition">Approve</button>
+                      <button onClick={() => handleReject(c.id)} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-700 transition">Reject</button>
                     </div>
                   )}
                 </div>
               </div>
             ))}
             {contestants.length === 0 && (
-              <div className="p-8 text-center text-gray-500">No contestants in the queue yet.</div>
+              <div className="p-8 text-center text-gray-500 font-semibold">No contestants in the queue yet.</div>
             )}
           </div>
         </div>
