@@ -11,7 +11,6 @@ declare global {
   }
 }
 
-// Match your exact Supabase bucket name here
 const BUCKET_NAME = 'contestants media';
 
 export default function Register() {
@@ -60,21 +59,13 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const { count } = await supabase
-        .from('contestants')
-        .select('*', { count: 'exact', head: true });
-      
-      if (count && count >= 2000) {
-        throw new Error('Registration is full. We have reached 2,000 contestants.');
-      }
-
       setUploading(true);
       
       // 1. Upload Photo
       const photoExt = photoFile.name.split('.').pop();
       const photoName = `${Date.now()}-${formData.email}.${photoExt}`;
       const { error: photoError } = await supabase.storage
-        .from(BUCKET_NAME) // Using the exact bucket name
+        .from(BUCKET_NAME)
         .upload(`photos/${photoName}`, photoFile);
       
       if (photoError) throw new Error('Photo upload failed: ' + photoError.message);
@@ -100,23 +91,55 @@ export default function Register() {
       const handler = window.PaystackPop.setup({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
         email: formData.email,
-        amount: 2000 * 100, // ₦2,000
+        amount: 2000 * 100,
         currency: 'NGN',
         ref: `REG-${Date.now()}`,
         metadata: {
           type: 'registration',
-          full_name: formData.full_name,
-          stage_name: formData.stage_name,
-          phone: formData.phone,
-          church: formData.church,
-          category: formData.category,
-          bio: formData.bio,
+          ...formData,
           photo_url: photoData.publicUrl,
           video_url: videoData.publicUrl,
-          dob: formData.dob,
         },
-        callback: function (response: any) {
-          router.push('/register/success');
+        callback: async function (response: any) {
+          // DATABASE INSERT HAPPENS HERE NOW (BYPASSING WEBHOOK FOR TESTING)
+          try {
+            // Get count to generate ID
+            const { count } = await supabase.from('contestants').select('*', { count: 'exact', head: true });
+            const nextNumber = (count || 0) + 1;
+            const contestantId = `TFTC-${nextNumber.toString().padStart(4, '0')}`;
+
+            // Insert into database
+            const { error: insertError } = await supabase.from('contestants').insert({
+              contestant_id: contestantId,
+              full_name: formData.full_name,
+              stage_name: formData.stage_name,
+              email: formData.email,
+              phone: formData.phone,
+              church: formData.church,
+              category: formData.category,
+              bio: formData.bio,
+              photo_url: photoData.publicUrl,
+              video_url: videoData.publicUrl,
+              status: 'pending', // Admin must approve
+              total_votes: 0,
+            });
+
+            if (insertError) throw insertError;
+
+            // Log transaction
+            await supabase.from('transactions').insert({
+              reference: response.reference,
+              voter_email: formData.email,
+              amount: 2000 * 100,
+              votes_credited: 0,
+              status: 'success',
+            });
+
+            router.push('/register/success');
+          } catch (err: any) {
+            alert('Payment succeeded but database save failed: ' + err.message);
+            setLoading(false);
+          }
         },
         onClose: function () {
           setLoading(false);
