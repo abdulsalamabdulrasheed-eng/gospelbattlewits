@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-declare global {
-  interface Window { PaystackPop: any; }
-}
+declare global { interface Window { PaystackPop: any; } }
 
 const BUCKET_NAME = 'contestants media';
 
-export default function Register() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -29,7 +27,6 @@ export default function Register() {
 
   useEffect(() => {
     checkRegistrationStatus();
-    // Check if redirected from login with error
     const error = searchParams.get('error');
     if (error === 'invalid_credentials' || error === 'no_account') {
       setErrorMsg('Your credentials were not found. Please fill the form below to register.');
@@ -90,7 +87,6 @@ export default function Register() {
         metadata: { type: 'registration', ...formData, photo_url: photoData.publicUrl, video_url: videoData.publicUrl },
         callback: async function (response: any) {
           try {
-            // 1. Create Auth User with temp password
             const tempPassword = `TFTC-${Date.now()}`;
             const { data: authData, error: authError } = await supabase.auth.signUp({
               email: formData.email,
@@ -98,7 +94,6 @@ export default function Register() {
             });
             if (authError) throw new Error('Auth creation failed: ' + authError.message);
 
-            // 2. Insert into database
             const { count } = await supabase.from('contestants').select('*', { count: 'exact', head: true });
             const nextNumber = (count || 0) + 1;
             const contestantId = `TFTC-${nextNumber.toString().padStart(4, '0')}`;
@@ -111,12 +106,10 @@ export default function Register() {
             });
             if (insertError) throw insertError;
 
-            // 3. Log transaction
             await supabase.from('transactions').insert({
               reference: response.reference, voter_email: formData.email, amount: 2000 * 100, votes_credited: 0, status: 'success',
             });
 
-            // 4. Sign in (auto-login)
             await supabase.auth.signInWithPassword({ email: formData.email, password: tempPassword });
             
             router.push('/contestant/set-password');
@@ -184,5 +177,13 @@ export default function Register() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function Register() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-bold">Loading...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }
