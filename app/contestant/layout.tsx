@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
-import { LayoutDashboard, Megaphone, BarChart3, Settings, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { LayoutDashboard, Megaphone, BarChart3, Settings, LogOut, BookOpen } from 'lucide-react';
 
 export default function ContestantLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -17,40 +19,46 @@ export default function ContestantLayout({ children }: { children: React.ReactNo
     { name: 'Overview', path: '/contestant/dashboard', icon: LayoutDashboard },
     { name: 'My Campaign', path: '/contestant/campaign', icon: Megaphone },
     { name: 'Analytics', path: '/contestant/analytics', icon: BarChart3 },
+    { name: 'Rules', path: '/contestant/rules', icon: BookOpen },
     { name: 'Settings', path: '/contestant/settings', icon: Settings },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row pb-16 md:pb-0">
-      
+      {/* Mobile Top Bar */}
+      <div className="md:hidden bg-black text-white p-3 flex justify-between items-center sticky top-0 z-50">
+        <div className="font-bold text-sm uppercase tracking-wider">Campaign Center</div>
+        <button onClick={handleLogout} className="text-xs bg-gray-800 px-3 py-1.5 rounded font-bold">Logout</button>
+      </div>
+
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 bg-black text-white flex-col sticky top-0 h-screen">
-        <div className="p-6 border-b border-gray-800">
-          <h1 className="text-xl font-black tracking-wider uppercase">Campaign Center</h1>
-          <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">TFTC 2027</p>
+      <div className="hidden md:flex w-56 bg-black text-white flex-col sticky top-0 h-screen border-r border-gray-800">
+        <div className="p-4 border-b border-gray-800">
+          <h1 className="text-base font-black tracking-wider uppercase">Campaign</h1>
+          <p className="text-[9px] text-gray-400 mt-1 uppercase tracking-widest">TFTC 2027</p>
         </div>
         
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-3 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.path;
             return (
               <Link
                 key={item.path}
                 href={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-bold text-sm transition-all ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-xs transition-all ${
                   isActive ? 'bg-white text-black' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                 }`}
               >
-                <item.icon size={18} className={isActive ? 'text-black' : 'text-gray-500'} />
+                <item.icon size={16} className={isActive ? 'text-black' : 'text-gray-500'} />
                 {item.name}
               </Link>
             );
           })}
         </nav>
         
-        <div className="p-4 border-t border-gray-800">
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-400 hover:bg-gray-800 rounded-lg transition">
-            <LogOut size={18} /> Logout
+        <div className="p-3 border-t border-gray-800">
+          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-gray-800 rounded-lg transition">
+            <LogOut size={16} /> Logout
           </button>
         </div>
       </div>
@@ -68,12 +76,10 @@ export default function ContestantLayout({ children }: { children: React.ReactNo
             <Link
               key={item.path}
               href={item.path}
-              className={`flex flex-col items-center p-2 rounded-lg ${
-                isActive ? 'text-black' : 'text-gray-400'
-              }`}
+              className={`flex flex-col items-center p-2 rounded-lg ${isActive ? 'text-black' : 'text-gray-400'}`}
             >
-              <item.icon size={20} className={isActive ? 'text-black' : 'text-gray-400'} />
-              <span className="text-[10px] font-bold mt-1">{item.name}</span>
+              <item.icon size={18} className={isActive ? 'text-black' : 'text-gray-400'} />
+              <span className="text-[9px] font-bold mt-1">{item.name}</span>
             </Link>
           );
         })}

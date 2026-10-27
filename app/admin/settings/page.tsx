@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { logAdminAction } from '@/utils/audit';
-import { ShieldAlert, Power, Users, Activity } from 'lucide-react';
+import { ShieldAlert, Power, Activity } from 'lucide-react';
+import { useModal } from '@/utils/useModal';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [confirmModal, setConfirmModal] = useState<{show: boolean, title: string, message: string, action: () => void, isDanger: boolean}>({show: false, title: '', message: '', action: () => {}, isDanger: false});
+  const { modal, showModal, hideModal } = useModal();
 
   useEffect(() => {
     fetchSettings();
@@ -22,26 +23,24 @@ export default function AdminSettings() {
 
   const toggleSetting = async (key: string, currentValue: boolean) => {
     const { error } = await supabase.from('settings').update({ value: !currentValue, updated_at: new Date().toISOString() }).eq('key', key);
-    if (error) return alert(error.message);
+    if (error) return showModal({ title: 'Error', message: error.message, isDanger: true, showCancel: false });
     await logAdminAction('toggle_setting', key, `Admin set ${key} to ${!currentValue}`);
     fetchSettings();
   };
 
-  const askConfirmation = (title: string, message: string, action: () => void) => {
-    setConfirmModal({ show: true, title, message, action, isDanger: true });
-  };
-
   const resetLeaderboard = () => {
-    askConfirmation(
-      'Reset Leaderboard?',
-      'This will set ALL contestant votes to 0. This cannot be undone.',
-      async () => {
+    showModal({
+      title: 'Reset Leaderboard?',
+      message: 'This will set ALL contestant votes to 0. This cannot be undone.',
+      isDanger: true,
+      confirmText: 'Yes, Reset Everything',
+      onConfirm: async () => {
         await supabase.from('contestants').update({ total_votes: 0 }).neq('id', '00000000-0000-0000-0000-000000000000');
         await logAdminAction('reset_leaderboard', 'ALL', 'Admin reset all votes to zero');
-        setConfirmModal({ ...confirmModal, show: false });
-        alert('Leaderboard has been reset.');
+        hideModal();
+        showModal({ title: 'Success', message: 'Leaderboard has been reset.', showCancel: false, onConfirm: hideModal });
       }
-    );
+    });
   };
 
   if (loading) return <div className="p-10 text-sm font-bold text-gray-500">Loading...</div>;
@@ -54,7 +53,6 @@ export default function AdminSettings() {
       </div>
 
       <div className="space-y-6">
-        
         {/* Live Controls */}
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <div className="p-4 border-b bg-gray-50 flex items-center gap-2">
@@ -119,19 +117,20 @@ export default function AdminSettings() {
             </button>
           </div>
         </div>
-
       </div>
 
-      {/* CONFIRMATION MODAL */}
-      {confirmModal.show && (
+      {/* RENDER THE MODAL */}
+      {modal.show && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-            <div className="p-4 text-center bg-red-50"><h3 className="text-lg font-black text-red-700">{confirmModal.title}</h3></div>
+            <div className={`p-4 text-center ${modal.isDanger ? 'bg-red-50' : 'bg-green-50'}`}>
+              <h3 className={`text-lg font-black ${modal.isDanger ? 'text-red-700' : 'text-green-700'}`}>{modal.title}</h3>
+            </div>
             <div className="p-6 text-center">
-              <p className="text-gray-600 text-sm mb-6">{confirmModal.message}</p>
+              <p className="text-gray-600 text-sm mb-6">{modal.message}</p>
               <div className="flex gap-2">
-                <button onClick={() => setConfirmModal({ ...confirmModal, show: false })} className="flex-1 bg-gray-200 text-black font-bold py-2.5 rounded-lg">Cancel</button>
-                <button onClick={confirmModal.action} className="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-lg">Yes, Proceed</button>
+                {modal.showCancel && <button onClick={hideModal} className="flex-1 bg-gray-200 text-black font-bold py-2.5 rounded-lg">Cancel</button>}
+                <button onClick={modal.onConfirm} className={`flex-1 text-white font-bold py-2.5 rounded-lg ${modal.isDanger ? 'bg-red-600' : 'bg-black'}`}>{modal.confirmText}</button>
               </div>
             </div>
           </div>
