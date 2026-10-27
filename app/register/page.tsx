@@ -4,9 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { UploadCloud, CheckCircle2, X } from 'lucide-react';
 
 declare global { interface Window { PaystackPop: any; } }
-// FIX: Matched exactly to your screenshot
 const BUCKET_NAME = 'contestants media';
 
 function RegisterForm() {
@@ -22,8 +22,12 @@ function RegisterForm() {
   const [formData, setFormData] = useState({
     full_name: '', stage_name: '', email: '', phone: '', church: '', dob: '', category: 'Singing', bio: '',
   });
+  
+  // File states
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
@@ -45,6 +49,26 @@ function RegisterForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Basic validation: under 50MB
+      if (file.size > 50 * 1024 * 1024) {
+        return showModal('File Too Large', 'Your video is larger than 50MB. Please upload a smaller file.', true);
+      }
+      setVideoFile(file);
+      setVideoPreview(URL.createObjectURL(file));
+    }
   };
 
   const calculateAge = (dob: string) => {
@@ -118,7 +142,6 @@ function RegisterForm() {
           .then(res => res.json())
           .then(data => {
             if (data.error) throw new Error(data.error);
-            
             supabase.auth.signInWithPassword({ email: formData.email, password: data.tempPassword })
               .then(() => router.push('/contestant/set-password'));
           })
@@ -199,8 +222,45 @@ function RegisterForm() {
               <div className="space-y-4 animate-in fade-in">
                 <div><label className="block text-sm font-bold text-gray-700 mb-1">Church *</label><input type="text" name="church" value={formData.church} required onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black" /></div>
                 <div><label className="block text-sm font-bold text-gray-700 mb-1">Category *</label><select name="category" value={formData.category} onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black bg-white"><option>Singing</option><option>Preaching</option><option>Comedy / Skit</option><option>Dance</option><option>Instrumental</option></select></div>
-                <div><label className="block text-sm font-bold text-gray-700 mb-1">Profile Photo *</label><input type="file" accept="image/jpeg, image/png" required onChange={(e) => setPhotoFile(e.target.files?.[0] || null)} className="w-full p-3 border rounded-lg outline-none focus:border-black bg-white" /></div>
-                <div><label className="block text-sm font-bold text-gray-700 mb-1">Talent Video (MP4) *</label><input type="file" accept="video/mp4, video/quicktime" required onChange={(e) => setVideoFile(e.target.files?.[0] || null)} className="w-full p-3 border rounded-lg outline-none focus:border-black bg-white" /></div>
+                
+                {/* Photo Upload with Preview */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Profile Photo *</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors relative">
+                    {photoPreview ? (
+                      <div className="relative">
+                        <img src={photoPreview} alt="Preview" className="w-24 h-24 rounded-full object-cover mx-auto mb-2 border-2 border-white shadow-md" />
+                        <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null); }} className="absolute top-0 right-1/3 bg-red-100 text-red-600 p-1 rounded-full"><X size={14} /></button>
+                      </div>
+                    ) : (
+                      <div className="cursor-pointer">
+                        <UploadCloud size={24} className="mx-auto text-gray-400 mb-2" />
+                        <p className="text-xs text-gray-500 font-semibold">Click to upload photo</p>
+                      </div>
+                    )}
+                    <input type="file" accept="image/jpeg, image/png" required onChange={handlePhotoChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  </div>
+                </div>
+
+                {/* Video Upload with Preview */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Talent Video (MP4) *</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors relative">
+                    {videoPreview ? (
+                      <div>
+                        <video src={videoPreview} controls className="w-full h-32 rounded-lg object-cover mb-2 bg-black" />
+                        <button type="button" onClick={() => { setVideoFile(null); setVideoPreview(null); }} className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">Remove Video</button>
+                      </div>
+                    ) : (
+                      <div className="cursor-pointer">
+                        <UploadCloud size={24} className="mx-auto text-gray-400 mb-2" />
+                        <p className="text-xs text-gray-500 font-semibold">Click to upload video (Max 2 mins)</p>
+                      </div>
+                    )}
+                    <input type="file" accept="video/mp4, video/quicktime" required onChange={handleVideoChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  </div>
+                </div>
+
                 <div><label className="block text-sm font-bold text-gray-700 mb-1">Short Bio *</label><textarea name="bio" value={formData.bio} required onChange={handleChange} rows={3} className="w-full p-3 border rounded-lg outline-none focus:border-black"></textarea></div>
                 <div className="flex gap-4 mt-6">
                   <button type="button" onClick={prevStep} className="flex-1 bg-gray-200 text-black font-bold py-4 rounded-xl">Back</button>
