@@ -61,24 +61,30 @@ export function CustomDatePicker({ value, onChange }: CustomDatePickerProps) {
                   onSelect={handleSelect}
                   fromYear={1950}
                   toYear={new Date().getFullYear()}
-                  captionLayout="dropdown" /* FIXED: Changed from dropdown-buttons to dropdown */
+                  captionLayout="dropdown"
+                  style={{
+                    // Override CSS variables for a black/white theme
+                    '--rdp-accent-color': '#000000',
+                    '--rdp-background-color': '#f3f4f6',
+                    '--rdp-outline': '2px solid black',
+                    '--rdp-outline-selected': '2px solid white',
+                  } as React.CSSProperties}
                   classNames={{
-                    caption: 'flex justify-center pt-1 relative items-center mb-2',
-                    caption_label: 'text-sm font-bold text-gray-900 hidden',
+                    month_caption: 'flex justify-center pt-1 relative items-center mb-2',
+                    caption_label: 'text-sm font-bold text-gray-900',
                     nav: 'flex items-center',
-                    nav_button: 'h-7 w-7 bg-transparent p-0 text-gray-500 hover:text-black flex items-center justify-center',
-                    nav_button_previous: 'absolute left-1',
-                    nav_button_next: 'absolute right-1',
-                    table: 'w-full border-collapse space-y-1',
-                    head_row: 'flex',
-                    head_cell: 'text-gray-400 rounded-md w-9 font-normal text-[0.8rem]',
-                    row: 'flex w-full mt-2',
-                    cell: 'text-center text-sm p-0 relative focus-within:relative focus-within:z-20',
-                    day: 'h-9 w-9 p-0 font-normal rounded-md hover:bg-gray-100 transition',
-                    day_selected: 'bg-black text-white hover:bg-black hover:text-white focus:bg-black focus:text-white',
-                    day_today: 'bg-gray-100 text-gray-900 font-bold',
-                    day_outside: 'text-gray-300 opacity-50',
-                    day_disabled: 'text-gray-300 opacity-50',
+                    button_previous: 'h-7 w-7 bg-transparent p-0 text-gray-500 hover:text-black flex items-center justify-center absolute left-1',
+                    button_next: 'h-7 w-7 bg-transparent p-0 text-gray-500 hover:text-black flex items-center justify-center absolute right-1',
+                    month_grid: 'w-full border-collapse space-y-1',
+                    weekdays: 'flex',
+                    weekday: 'text-gray-400 rounded-md w-9 font-normal text-[0.8rem]',
+                    week: 'flex w-full mt-2',
+                    day: 'h-9 w-9 p-0 font-normal rounded-md hover:bg-gray-100 transition text-center text-sm relative focus-within:relative focus-within:z-20',
+                    day_button: 'h-9 w-9 rounded-md',
+                    selected: 'bg-black text-white hover:bg-black hover:text-white focus:bg-black focus:text-white',
+                    today: 'bg-gray-100 text-gray-900 font-bold',
+                    outside: 'text-gray-300 opacity-50',
+                    disabled: 'text-gray-300 opacity-50',
                   }}
                 />
               </div>
