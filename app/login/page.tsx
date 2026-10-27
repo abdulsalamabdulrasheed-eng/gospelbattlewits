@@ -17,39 +17,53 @@ export default function GeneralLogin() {
     setLoading(true);
     setError('');
 
+    const trimmedEmail = email.trim().toLowerCase();
+    console.log("Attempting login for:", trimmedEmail);
+
+    // 1. Authenticate
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: trimmedEmail,
       password: password,
     });
 
     if (authError) {
+      console.error("Auth failed:", authError.message);
       setError(authError.message);
       setLoading(false);
       return;
     }
 
-    // Check if Admin (using maybeSingle to prevent crash)
-    const { data: adminData } = await supabase
+    console.log("Auth successful. User ID:", authData.user.id);
+
+    // 2. Check if Admin
+    const { data: adminData, error: adminError } = await supabase
       .from('admins')
-      .select('id')
-      .eq('email', email.trim())
+      .select('*')
+      .eq('id', authData.user.id) // Check by ID, not email! It's safer.
       .maybeSingle();
 
+    if (adminError) console.error("Admin check error:", adminError);
+
     if (adminData) {
+      console.log("Admin found! Redirecting...");
       router.push('/admin');
       return;
     }
 
-    // Check if Contestant
-    const { data: contestantData } = await supabase
+    // 3. Check if Contestant
+    const { data: contestantData, error: contestantError } = await supabase
       .from('contestants')
       .select('id')
-      .eq('email', email.trim())
+      .eq('email', trimmedEmail)
       .maybeSingle();
     
+    if (contestantError) console.error("Contestant check error:", contestantError);
+
     if (contestantData) {
+      console.log("Contestant found! Redirecting...");
       router.push('/contestant/dashboard');
     } else {
+      console.log("No admin or contestant profile found.");
       await supabase.auth.signOut();
       setError('Account authenticated, but no profile found. Please register.');
       setLoading(false);
