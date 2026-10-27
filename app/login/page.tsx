@@ -28,15 +28,15 @@ export default function GeneralLogin() {
       return;
     }
 
-    // DEBUG: Show what email actually logged in
-    const loggedInEmail = authData.user?.email;
-    alert("Successfully Authenticated as: " + loggedInEmail);
-
-    // Check if Admin (using the authenticated email, not the typed one)
-    const { data: adminData, error: adminError } = await supabase.from('admins').select('id').eq('email', loggedInEmail).single();
+    // Check if Admin (using maybeSingle to prevent crash on 0 or 2 rows)
+    const { data: adminData, error: adminError } = await supabase
+      .from('admins')
+      .select('id')
+      .eq('email', email.trim())
+      .maybeSingle();
 
     if (adminError) {
-      alert("Admin lookup failed: " + adminError.message + ". We will check if this is a contestant.");
+      console.error("Admin check failed:", adminError);
     }
 
     if (adminData) {
@@ -45,13 +45,17 @@ export default function GeneralLogin() {
     }
 
     // Check if Contestant
-    const { data: contestantData } = await supabase.from('contestants').select('id').eq('email', loggedInEmail).single();
+    const { data: contestantData } = await supabase
+      .from('contestants')
+      .select('id')
+      .eq('email', email.trim())
+      .maybeSingle();
     
     if (contestantData) {
       router.push('/contestant/dashboard');
     } else {
       await supabase.auth.signOut();
-      setError('Account authenticated, but no profile found in admins or contestants.');
+      setError('Account authenticated, but no profile found. Please register.');
       setLoading(false);
     }
   };
