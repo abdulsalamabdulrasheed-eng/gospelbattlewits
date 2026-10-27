@@ -18,13 +18,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Dashboard', path: '/admin' },
     { name: 'Contestants', path: '/admin/contestants' },
     { name: 'Transactions', path: '/admin/transactions' },
+    { name: 'Consent Records', path: '/admin/consent' },
+    { name: 'Audit Log', path: '/admin/audit' },
     { name: 'Settings', path: '/admin/settings' },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       
-      {/* Mobile Top Bar */}
       <div className="md:hidden bg-black text-white p-4 flex justify-between items-center sticky top-0 z-50">
         <h1 className="text-lg font-black tracking-wider uppercase">TFTC Admin</h1>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-gray-800 rounded-lg">
@@ -34,14 +35,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
       </div>
 
-      {/* Sidebar (Hidden on mobile unless toggled) */}
       <div className={`${isSidebarOpen ? 'block' : 'hidden'} md:block w-full md:w-64 bg-black text-white md:min-h-screen flex flex-col fixed md:relative z-40 top-0 h-full md:h-auto pt-16 md:pt-0`}>
         <div className="hidden md:block p-6 border-b border-gray-800">
           <h1 className="text-xl font-black tracking-wider uppercase">TFTC Admin</h1>
           <p className="text-xs text-gray-400 mt-1">God Mode</p>
         </div>
         
-        <nav className="flex-1 p-4 space-y-2 mt-4 md:mt-0">
+        <nav className="flex-1 p-4 space-y-2 mt-4 md:mt-0 overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -62,12 +62,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      {/* Overlay to close sidebar on mobile */}
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
       )}
 
-      {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto h-screen w-full">
         {children}
       </div>
