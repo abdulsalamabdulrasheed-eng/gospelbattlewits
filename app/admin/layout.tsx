@@ -4,6 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  LayoutDashboard, Users, CreditCard, ShieldCheck, 
+  Settings, LogOut, Menu, X, FileText, CheckCircle 
+} from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,60 +19,131 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     window.location.href = '/login';
   };
 
-  const navItems = [
-    { name: 'Dashboard', path: '/admin' },
-    { name: 'Contestants', path: '/admin/contestants' },
-    { name: 'Transactions', path: '/admin/transactions' },
-    { name: 'Consent Records', path: '/admin/consent' },
-    { name: 'Audit Log', path: '/admin/audit' },
-    { name: 'Settings', path: '/admin/settings' },
+  const navGroups = [
+    {
+      title: 'Command Center',
+      items: [
+        { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+      ]
+    },
+    {
+      title: 'Voting Operations',
+      items: [
+        { name: 'Contestants', path: '/admin/contestants', icon: Users },
+        { name: 'Transactions', path: '/admin/transactions', icon: CreditCard },
+      ]
+    },
+    {
+      title: 'Security & Audit',
+      items: [
+        { name: 'Consent Records', path: '/admin/consent', icon: FileText },
+        { name: 'Audit Log', path: '/admin/audit', icon: ShieldCheck },
+      ]
+    },
+    {
+      title: 'System',
+      items: [
+        { name: 'Settings', path: '/admin/settings', icon: Settings },
+      ]
+    }
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       
-      <div className="md:hidden bg-black text-white p-4 flex justify-between items-center sticky top-0 z-50">
-        <h1 className="text-lg font-black tracking-wider uppercase">TFTC Admin</h1>
-        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-gray-800 rounded-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
+      {/* Mobile Top Bar */}
+      <div className="md:hidden bg-black text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+        <div className="flex items-center gap-2">
+          <div className="bg-white text-black p-1 rounded font-black text-xs">GB</div>
+          <h1 className="text-lg font-black tracking-wider uppercase">TFTC Admin</h1>
+        </div>
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition">
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
-      <div className={`${isSidebarOpen ? 'block' : 'hidden'} md:block w-full md:w-64 bg-black text-white md:min-h-screen flex flex-col fixed md:relative z-40 top-0 h-full md:h-auto pt-16 md:pt-0`}>
-        <div className="hidden md:block p-6 border-b border-gray-800">
-          <h1 className="text-xl font-black tracking-wider uppercase">TFTC Admin</h1>
-          <p className="text-xs text-gray-400 mt-1">God Mode</p>
-        </div>
-        
-        <nav className="flex-1 p-4 space-y-2 mt-4 md:mt-0 overflow-y-auto">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              href={item.path}
-              onClick={() => setIsSidebarOpen(false)}
-              className={`block px-4 py-3 rounded-lg font-bold text-sm transition ${
-                pathname === item.path ? 'bg-white text-black' : 'text-gray-300 hover:bg-gray-800'
-              }`}
-            >
-              {item.name}
-            </Link>
-          ))}
-        </nav>
-        <div className="p-4 border-t border-gray-800 pb-20 md:pb-4">
-          <button onClick={handleLogout} className="w-full text-left px-4 py-3 text-sm font-bold text-red-400 hover:bg-gray-800 rounded-lg transition">
-            Logout
-          </button>
-        </div>
-      </div>
+      {/* Desktop & Mobile Sidebar */}
+      <AnimatePresence>
+        {(isSidebarOpen || typeof window !== 'undefined' && window.innerWidth >= 768) && (
+          <motion.div 
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="w-full md:w-72 bg-[#0A0A0A] text-white md:min-h-screen flex flex-col fixed md:relative z-40 top-0 h-full md:h-auto pt-16 md:pt-0 border-r border-gray-800"
+          >
+            <div className="hidden md:flex items-center gap-3 p-6 border-b border-gray-800">
+              <div className="bg-white text-black p-1.5 rounded-md font-black text-sm">GB</div>
+              <div>
+                <h1 className="text-lg font-black tracking-wider uppercase leading-none">TFTC Admin</h1>
+                <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">God Mode</p>
+              </div>
+            </div>
+            
+            <nav className="flex-1 p-4 space-y-6 mt-4 md:mt-0 overflow-y-auto">
+              {navGroups.map((group) => (
+                <div key={group.title}>
+                  <h3 className="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{group.title}</h3>
+                  <div className="space-y-1">
+                    {group.items.map((item) => {
+                      const isActive = pathname === item.path;
+                      return (
+                        <Link
+                          key={item.path}
+                          href={item.path}
+                          onClick={() => setIsSidebarOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg font-bold text-sm transition-all ${
+                            isActive 
+                              ? 'bg-white text-black shadow-lg' 
+                              : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                          }`}
+                        >
+                          <item.icon size={18} className={isActive ? 'text-black' : 'text-gray-500'} />
+                          {item.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </nav>
 
-      {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
-      )}
+            <div className="p-4 border-t border-gray-800 pb-20 md:pb-4">
+              <button 
+                onClick={handleLogout} 
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-400 hover:bg-gray-800 rounded-lg transition"
+              >
+                <LogOut size={18} />
+                Logout
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
+      {/* Overlay for mobile */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden" 
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto h-screen w-full">
-        {children}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="h-full"
+        >
+          {children}
+        </motion.div>
       </div>
     </div>
   );
