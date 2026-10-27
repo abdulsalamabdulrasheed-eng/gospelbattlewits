@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 declare global { interface Window { PaystackPop: any; } }
-const BUCKET_NAME = 'contestants media';
+const BUCKET_NAME = 'CONTESTANTS MEDIA';
 
 function RegisterForm() {
   const router = useRouter();
@@ -16,7 +16,6 @@ function RegisterForm() {
   const [uploading, setUploading] = useState(false);
   const [isClosed, setIsClosed] = useState(false);
 
-  // Custom modal state
   const [modal, setModal] = useState({ show: false, title: '', message: '', isError: false });
 
   const [formData, setFormData] = useState({
@@ -103,58 +102,31 @@ function RegisterForm() {
         amount: 2000 * 100,
         currency: 'NGN',
         ref: `REG-${Date.now()}`,
-        metadata: { 
-          type: 'registration', 
-          ...formData, 
-          photo_url: photoData.publicUrl, 
-          video_url: videoData.publicUrl 
-        },
-        // FIX: Using a standard function, and running async logic inside
+        metadata: { type: 'registration' },
         callback: function (response: any) {
-          (async () => {
-            try {
-              const tempPassword = `TFTC-${Date.now()}`;
-              const { error: authError } = await supabase.auth.signUp({ 
-                email: formData.email, 
-                password: tempPassword 
-              });
-              
-              if (authError && authError.message !== "User already registered") {
-                throw new Error('Auth creation failed: ' + authError.message);
-              }
-
-              const { count } = await supabase.from('contestants').select('*', { count: 'exact', head: true });
-              const nextNumber = (count || 0) + 1;
-              const contestantId = `TFTC-${nextNumber.toString().padStart(4, '0')}`;
-
-              const { error: insertError } = await supabase.from('contestants').insert({
-                contestant_id: contestantId, full_name: formData.full_name, stage_name: formData.stage_name,
-                email: formData.email, phone: formData.phone, church: formData.church, category: formData.category,
-                bio: formData.bio, photo_url: photoData.publicUrl, video_url: videoData.publicUrl,
-                status: 'pending', total_votes: 0,
-              });
-              
-              if (insertError) throw insertError;
-
-              await supabase.from('transactions').insert({
-                reference: response.reference, 
-                voter_email: formData.email, 
-                amount: 2000 * 100, 
-                votes_credited: 0, 
-                status: 'success',
-              });
-
-              await supabase.auth.signInWithPassword({ 
-                email: formData.email, 
-                password: tempPassword 
-              });
-              
-              router.push('/contestant/set-password');
-            } catch (err: any) {
-              showModal('Error', 'Payment succeeded but save failed: ' + err.message, true);
-              setLoading(false);
-            }
-          })();
+          // Call the API route to bypass RLS
+          fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              formData,
+              photoUrl: photoData.publicUrl,
+              videoUrl: videoData.publicUrl,
+              reference: response.reference,
+            }),
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.error) throw new Error(data.error);
+            
+            // Auto-login the user
+            supabase.auth.signInWithPassword({ email: formData.email, password: data.tempPassword })
+              .then(() => router.push('/contestant/set-password'));
+          })
+          .catch(err => {
+            showModal('Error', 'Payment succeeded but save failed: ' + err.message, true);
+            setLoading(false);
+          });
         },
         onClose: function () { 
           setLoading(false); 
@@ -173,7 +145,6 @@ function RegisterForm() {
 
   return (
     <main className="min-h-screen bg-gray-50 pb-20">
-      
       {modal.show && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in duration-200">
