@@ -54,7 +54,6 @@ export function CustomDatePicker({ value, onChange }: CustomDatePickerProps) {
                 <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-black"><X size={18} /></button>
               </div>
 
-              {/* React Day Picker with custom black/white styling */}
               <div className="flex justify-center">
                 <DayPicker
                   mode="single"
@@ -62,7 +61,7 @@ export function CustomDatePicker({ value, onChange }: CustomDatePickerProps) {
                   onSelect={handleSelect}
                   fromYear={1950}
                   toYear={new Date().getFullYear()}
-                  captionLayout="dropdown-buttons"
+                  captionLayout="dropdown" /* FIXED: Changed from dropdown-buttons to dropdown */
                   classNames={{
                     caption: 'flex justify-center pt-1 relative items-center mb-2',
                     caption_label: 'text-sm font-bold text-gray-900 hidden',
