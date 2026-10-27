@@ -95,7 +95,7 @@ function RegisterForm() {
       const { data: videoData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(`videos/${videoName}`);
 
       setUploading(false);
-      if (!window.PaystackPop) throw new Error('Paystack is loading. Please try again.');
+      if (!window.PaystackPop) throw new Error('Paystack is loading. Please refresh and try again.');
 
       const handler = window.PaystackPop.setup({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
@@ -103,37 +103,63 @@ function RegisterForm() {
         amount: 2000 * 100,
         currency: 'NGN',
         ref: `REG-${Date.now()}`,
-        metadata: { type: 'registration', ...formData, photo_url: photoData.publicUrl, video_url: videoData.publicUrl },
-        callback: async function (response: any) {
-          try {
-            const tempPassword = `TFTC-${Date.now()}`;
-            const { error: authError } = await supabase.auth.signUp({ email: formData.email, password: tempPassword });
-            if (authError && authError.message !== "User already registered") throw new Error('Auth creation failed: ' + authError.message);
-
-            const { count } = await supabase.from('contestants').select('*', { count: 'exact', head: true });
-            const nextNumber = (count || 0) + 1;
-            const contestantId = `TFTC-${nextNumber.toString().padStart(4, '0')}`;
-
-            const { error: insertError } = await supabase.from('contestants').insert({
-              contestant_id: contestantId, full_name: formData.full_name, stage_name: formData.stage_name,
-              email: formData.email, phone: formData.phone, church: formData.church, category: formData.category,
-              bio: formData.bio, photo_url: photoData.publicUrl, video_url: videoData.publicUrl,
-              status: 'pending', total_votes: 0,
-            });
-            if (insertError) throw insertError;
-
-            await supabase.from('transactions').insert({
-              reference: response.reference, voter_email: formData.email, amount: 2000 * 100, votes_credited: 0, status: 'success',
-            });
-
-            await supabase.auth.signInWithPassword({ email: formData.email, password: tempPassword });
-            router.push('/contestant/set-password');
-          } catch (err: any) {
-            showModal('Error', 'Payment succeeded but save failed: ' + err.message, true);
-            setLoading(false);
-          }
+        metadata: { 
+          type: 'registration', 
+          ...formData, 
+          photo_url: photoData.publicUrl, 
+          video_url: videoData.publicUrl 
         },
-        onClose: function () { setLoading(false); showModal('Payment Cancelled', 'Registration was not completed.', true); }
+        // FIX: Using a standard function, and running async logic inside
+        callback: function (response: any) {
+          (async () => {
+            try {
+              const tempPassword = `TFTC-${Date.now()}`;
+              const { error: authError } = await supabase.auth.signUp({ 
+                email: formData.email, 
+                password: tempPassword 
+              });
+              
+              if (authError && authError.message !== "User already registered") {
+                throw new Error('Auth creation failed: ' + authError.message);
+              }
+
+              const { count } = await supabase.from('contestants').select('*', { count: 'exact', head: true });
+              const nextNumber = (count || 0) + 1;
+              const contestantId = `TFTC-${nextNumber.toString().padStart(4, '0')}`;
+
+              const { error: insertError } = await supabase.from('contestants').insert({
+                contestant_id: contestantId, full_name: formData.full_name, stage_name: formData.stage_name,
+                email: formData.email, phone: formData.phone, church: formData.church, category: formData.category,
+                bio: formData.bio, photo_url: photoData.publicUrl, video_url: videoData.publicUrl,
+                status: 'pending', total_votes: 0,
+              });
+              
+              if (insertError) throw insertError;
+
+              await supabase.from('transactions').insert({
+                reference: response.reference, 
+                voter_email: formData.email, 
+                amount: 2000 * 100, 
+                votes_credited: 0, 
+                status: 'success',
+              });
+
+              await supabase.auth.signInWithPassword({ 
+                email: formData.email, 
+                password: tempPassword 
+              });
+              
+              router.push('/contestant/set-password');
+            } catch (err: any) {
+              showModal('Error', 'Payment succeeded but save failed: ' + err.message, true);
+              setLoading(false);
+            }
+          })();
+        },
+        onClose: function () { 
+          setLoading(false); 
+          showModal('Payment Cancelled', 'Registration was not completed.', true); 
+        }
       });
       handler.openIframe();
     } catch (error: any) {
@@ -148,7 +174,6 @@ function RegisterForm() {
   return (
     <main className="min-h-screen bg-gray-50 pb-20">
       
-      {/* CUSTOM MODAL */}
       {modal.show && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in duration-200">
@@ -175,20 +200,15 @@ function RegisterForm() {
             <p className="text-gray-500 text-sm mt-2">You are highly expected. Good luck!</p>
           </div>
 
-          {/* Progress Bar */}
           <div className="flex items-center justify-between mb-8 relative">
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 z-0"></div>
             <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-black z-0 transition-all" style={{ width: `${((step - 1) / 2) * 100}%` }}></div>
-            
             {[1, 2, 3].map((num) => (
-              <div key={num} className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${step >= num ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
-                {num}
-              </div>
+              <div key={num} className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${step >= num ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>{num}</div>
             ))}
           </div>
 
           <form onSubmit={handleSubmit}>
-            {/* STEP 1: Personal Info */}
             {step === 1 && (
               <div className="space-y-4 animate-in fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -205,7 +225,6 @@ function RegisterForm() {
               </div>
             )}
 
-            {/* STEP 2: Church & Talent */}
             {step === 2 && (
               <div className="space-y-4 animate-in fade-in">
                 <div><label className="block text-sm font-bold text-gray-700 mb-1">Church *</label><input type="text" name="church" value={formData.church} required onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black" /></div>
@@ -220,7 +239,6 @@ function RegisterForm() {
               </div>
             )}
 
-            {/* STEP 3: Review & Pay */}
             {step === 3 && (
               <div className="space-y-4 animate-in fade-in">
                 <div className="bg-gray-50 p-4 rounded-lg border mb-4">

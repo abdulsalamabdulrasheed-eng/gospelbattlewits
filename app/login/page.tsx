@@ -28,16 +28,12 @@ export default function GeneralLogin() {
       return;
     }
 
-    // Check if Admin (using maybeSingle to prevent crash on 0 or 2 rows)
-    const { data: adminData, error: adminError } = await supabase
+    // Check if Admin (using maybeSingle to prevent crash)
+    const { data: adminData } = await supabase
       .from('admins')
       .select('id')
       .eq('email', email.trim())
       .maybeSingle();
-
-    if (adminError) {
-      console.error("Admin check failed:", adminError);
-    }
 
     if (adminData) {
       router.push('/admin');
