@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 declare global { interface Window { PaystackPop: any; } }
-const BUCKET_NAME = 'CONTESTANTS MEDIA';
+// FIX: Matched exactly to your screenshot
+const BUCKET_NAME = 'contestants media';
 
 function RegisterForm() {
   const router = useRouter();
@@ -104,7 +105,6 @@ function RegisterForm() {
         ref: `REG-${Date.now()}`,
         metadata: { type: 'registration' },
         callback: function (response: any) {
-          // Call the API route to bypass RLS
           fetch('/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -119,7 +119,6 @@ function RegisterForm() {
           .then(data => {
             if (data.error) throw new Error(data.error);
             
-            // Auto-login the user
             supabase.auth.signInWithPassword({ email: formData.email, password: data.tempPassword })
               .then(() => router.push('/contestant/set-password'));
           })
