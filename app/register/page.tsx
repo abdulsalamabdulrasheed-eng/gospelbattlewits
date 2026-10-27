@@ -4,7 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { UploadCloud, CheckCircle2, X } from 'lucide-react';
+import { UploadCloud, X } from 'lucide-react';
+import { CustomDatePicker } from '@/components/CustomDatePicker';
+import { format } from 'date-fns';
 
 declare global { interface Window { PaystackPop: any; } }
 const BUCKET_NAME = 'contestants media';
@@ -23,7 +25,7 @@ function RegisterForm() {
     full_name: '', stage_name: '', email: '', phone: '', church: '', dob: '', category: 'Singing', bio: '',
   });
   
-  // File states
+  const [dobDate, setDobDate] = useState<Date | undefined>(undefined);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -37,6 +39,12 @@ function RegisterForm() {
       showModal('Notice', 'Your credentials were not found. Please register below.', true);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (dobDate) {
+      setFormData(prev => ({ ...prev, dob: format(dobDate, 'yyyy-MM-dd') }));
+    }
+  }, [dobDate]);
 
   const checkRegistrationStatus = async () => {
     const { data } = await supabase.from('settings').select('value').eq('key', 'registration_open').maybeSingle();
@@ -62,7 +70,6 @@ function RegisterForm() {
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Basic validation: under 50MB
       if (file.size > 50 * 1024 * 1024) {
         return showModal('File Too Large', 'Your video is larger than 50MB. Please upload a smaller file.', true);
       }
@@ -171,7 +178,7 @@ function RegisterForm() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in duration-200">
             <div className={`p-4 text-center ${modal.isError ? 'bg-red-50' : 'bg-green-50'}`}>
-              <h3 className="text-lg font-black text-gray-900">{modal.title}</h3>
+              <h3 className={`text-lg font-black ${modal.isError ? 'text-red-700' : 'text-green-700'}`}>{modal.title}</h3>
             </div>
             <div className="p-6 text-center">
               <p className="text-gray-600 text-sm mb-6">{modal.message}</p>
@@ -212,7 +219,10 @@ function RegisterForm() {
                   <div><label className="block text-sm font-bold text-gray-700 mb-1">Email *</label><input type="email" name="email" value={formData.email} required onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black" /></div>
                   <div><label className="block text-sm font-bold text-gray-700 mb-1">Phone *</label><input type="tel" name="phone" value={formData.phone} required onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black" /></div>
                 </div>
-                <div><label className="block text-sm font-bold text-gray-700 mb-1">Date of Birth *</label><input type="date" name="dob" value={formData.dob} required onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black" /></div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Date of Birth *</label>
+                  <CustomDatePicker value={dobDate} onChange={setDobDate} />
+                </div>
                 <div className="text-center mt-6"><button type="button" onClick={nextStep} className="w-full bg-black text-white font-bold py-4 rounded-xl">Continue</button></div>
                 <div className="text-center text-sm">Already have an account? <Link href="/login" className="font-bold underline">Login</Link></div>
               </div>
@@ -223,7 +233,6 @@ function RegisterForm() {
                 <div><label className="block text-sm font-bold text-gray-700 mb-1">Church *</label><input type="text" name="church" value={formData.church} required onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black" /></div>
                 <div><label className="block text-sm font-bold text-gray-700 mb-1">Category *</label><select name="category" value={formData.category} onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black bg-white"><option>Singing</option><option>Preaching</option><option>Comedy / Skit</option><option>Dance</option><option>Instrumental</option></select></div>
                 
-                {/* Photo Upload with Preview */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Profile Photo *</label>
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors relative">
@@ -242,7 +251,6 @@ function RegisterForm() {
                   </div>
                 </div>
 
-                {/* Video Upload with Preview */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Talent Video (MP4) *</label>
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors relative">
