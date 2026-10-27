@@ -4,14 +4,16 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, Mail, Phone, Edit2, CheckCircle2, Lock, X, Copy, Clock, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Mail, Phone, Edit2, CheckCircle2, Lock, X, Copy, Clock, HelpCircle } from 'lucide-react';
 
-export default function ContestantDashboard() {
+export default function ContestantOverview() {
   const [profile, setProfile] = useState<any>(null);
-  const [voters, setVoters] = useState<any[]>([]);
   const [rank, setRank] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  
+  // Guide Tour State
+  const [showTour, setShowTour] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ email: '', phone: '' });
@@ -20,7 +22,7 @@ export default function ContestantDashboard() {
 
   const isPending = profile?.status === 'pending';
   const isApproved = profile?.status === 'approved';
-  const isVerified = profile?.email_verified && profile?.phone_verified;
+  const isVerified = profile?.email_verified === true && profile?.phone_verified === true;
   const isFullyReady = isApproved && isVerified;
 
   const getMotivation = (rank: number) => {
@@ -35,10 +37,10 @@ export default function ContestantDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/contestant/login'); return; }
+      if (!user) { router.push('/login'); return; }
 
       const { data: contestant } = await supabase.from('contestants').select('*').eq('email', user.email).single();
-      if (!contestant) { router.push('/contestant/login'); return; }
+      if (!contestant) { router.push('/login'); return; }
       
       setProfile(contestant);
       setEditForm({ email: contestant.email, phone: contestant.phone });
@@ -48,18 +50,19 @@ export default function ContestantDashboard() {
         setRank((count || 0) + 1);
       }
 
-      const { data: txData } = await supabase.from('transactions').select('*').eq('contestant_id', contestant.id).order('created_at', { ascending: false }).limit(20);
-      if (txData) setVoters(txData);
-      
+      // Check if first time (show tour)
+      const hasSeenTour = localStorage.getItem('tftc_tour_seen');
+      if (!hasSeenTour) setShowTour(true);
+
       setLoading(false);
     };
 
     fetchData();
   }, [router]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/contestant/login');
+  const closeTour = () => {
+    localStorage.setItem('tftc_tour_seen', 'true');
+    setShowTour(false);
   };
 
   const handleVerifyEmail = async () => {
@@ -67,7 +70,7 @@ export default function ContestantDashboard() {
     setTimeout(async () => {
       await supabase.from('contestants').update({ email_verified: true }).eq('id', profile.id);
       setProfile({ ...profile, email_verified: true });
-    }, 3000);
+    }, 2000);
   };
 
   const handleVerifyPhone = () => setShowSmsModal(true);
@@ -101,121 +104,104 @@ export default function ContestantDashboard() {
     alert("Link copied to clipboard!");
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-bold">Loading Dashboard...</div>;
+  if (loading) return (
+    <div className="p-6 space-y-4 animate-pulse">
+      <div className="h-24 bg-gray-200 rounded-xl"></div>
+      <div className="h-32 bg-gray-200 rounded-xl"></div>
+      <div className="h-32 bg-gray-200 rounded-xl"></div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-black text-white p-4 flex justify-between items-center sticky top-0 z-50">
-        <div className="font-bold text-lg">My Dashboard</div>
-        <button onClick={handleLogout} className="text-sm bg-gray-800 px-4 py-2 rounded-lg font-bold hover:bg-gray-700">Logout</button>
+    <div className="p-4 md:p-6 space-y-6">
+      
+      {/* GUIDE TOUR MODAL */}
+      <AnimatePresence>
+        {showTour && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 to-yellow-600"></div>
+              <h2 className="text-2xl font-black text-gray-900 mb-2">Welcome to Your Campaign Center</h2>
+              <p className="text-sm text-gray-500 mb-6">Here is how you win the crown:</p>
+              <div className="space-y-4 text-left mb-8">
+                <div className="flex gap-3"><div className="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">1</div><p className="text-sm font-semibold">Verify your email and phone to unlock your link.</p></div>
+                <div className="flex gap-3"><div className="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">2</div><p className="text-sm font-semibold">Share your unique link on WhatsApp and social media.</p></div>
+                <div className="flex gap-3"><div className="bg-black text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">3</div><p className="text-sm font-semibold">Track your rank and climb to the Top 20!</p></div>
+              </div>
+              <button onClick={closeTour} className="w-full bg-black text-white font-bold py-3 rounded-lg">Got it, Let's Go!</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Status Banner */}
+      {isPending && (
+        <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 flex items-start gap-3">
+          <div className="p-2 bg-orange-100 rounded-full shrink-0"><Clock size={18} className="text-orange-600"/></div>
+          <div>
+            <h2 className="text-sm font-black text-orange-800">Application Under Review</h2>
+            <p className="text-xs text-orange-700 mt-1">The admin is currently reviewing your media. Verify your contact info below while you wait.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Verification Gate */}
+      {!isVerified && (
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+          <h2 className="text-sm font-black text-gray-900 mb-1 flex items-center gap-2"><Lock size={16}/> Verify Your Identity</h2>
+          <p className="text-xs text-gray-500 mb-4">Unlock your campaign tools by verifying your contact info.</p>
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg border">
+              <div className="flex items-center gap-2 text-xs font-bold truncate"><Mail size={14}/> {profile.email}</div>
+              {profile.email_verified ? <span className="text-green-600 text-[10px] font-bold flex items-center gap-1"><CheckCircle2 size={12}/> Verified</span> : <button onClick={handleVerifyEmail} className="bg-black text-white text-[10px] px-3 py-1.5 rounded-md shrink-0">Verify</button>}
+            </div>
+            
+            <div className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg border">
+              <div className="flex items-center gap-2 text-xs font-bold truncate"><Phone size={14}/> {profile.phone}</div>
+              {profile.phone_verified ? <span className="text-green-600 text-[10px] font-bold flex items-center gap-1"><CheckCircle2 size={12}/> Verified</span> : <button onClick={handleVerifyPhone} className="bg-black text-white text-[10px] px-3 py-1.5 rounded-md shrink-0">Verify</button>}
+            </div>
+          </div>
+          <button onClick={() => setIsEditing(true)} className="mt-3 text-[10px] font-bold text-gray-500 underline flex items-center gap-1"><Edit2 size={10}/> Edit Contact Info</button>
+        </div>
+      )}
+
+      {/* Profile Card */}
+      <div className="bg-white rounded-xl p-5 shadow-sm border text-center relative overflow-hidden">
+        <img src={profile.photo_url} alt="Profile" className="w-20 h-20 rounded-full object-cover mx-auto mb-3 border-4 border-white shadow-md" />
+        <h1 className="text-xl font-black text-gray-900">{profile.stage_name || profile.full_name}</h1>
+        <p className="text-xs text-gray-500">{profile.contestant_id} • {profile.church}</p>
       </div>
 
-      <div className="max-w-3xl mx-auto p-4 mt-6 space-y-6">
-        
-        {/* Status Banner */}
-        {isPending && (
-          <div className="bg-orange-50 rounded-2xl p-5 shadow-sm border border-orange-200 flex items-start gap-4">
-            <div className="p-2 bg-orange-100 rounded-full shrink-0"><Clock size={20} className="text-orange-600"/></div>
-            <div>
-              <h2 className="text-base font-black text-orange-800">Application Under Review</h2>
-              <p className="text-sm text-orange-700 mt-1">Your payment was successful. The admin is currently reviewing your media. You will be notified once approved.</p>
-              <p className="text-xs text-orange-600 mt-2 font-semibold">Submitted: {new Date(profile.created_at).toLocaleString()}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Verification Gate (Active during pending) */}
-        {!isVerified && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-            <h2 className="text-lg font-black text-gray-900 mb-2 flex items-center gap-2"><Lock size={18}/> Verify Your Identity</h2>
-            <p className="text-sm text-gray-600 mb-4">You must verify your email and phone number to unlock your share buttons and start campaigning.</p>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                <div className="flex items-center gap-2 text-sm font-bold truncate"><Mail size={16}/> {profile.email}</div>
-                {profile.email_verified ? <span className="text-green-600 text-xs font-bold flex items-center gap-1"><CheckCircle2 size={14}/> Verified</span> : <button onClick={handleVerifyEmail} className="bg-black text-white text-xs px-3 py-1.5 rounded-md shrink-0">Verify Email</button>}
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                <div className="flex items-center gap-2 text-sm font-bold truncate"><Phone size={16}/> {profile.phone}</div>
-                {profile.phone_verified ? <span className="text-green-600 text-xs font-bold flex items-center gap-1"><CheckCircle2 size={14}/> Verified</span> : <button onClick={handleVerifyPhone} className="bg-black text-white text-xs px-3 py-1.5 rounded-md shrink-0">Verify Phone</button>}
-              </div>
-            </div>
-
-            <button onClick={() => setIsEditing(true)} className="mt-4 text-xs font-bold text-gray-500 underline flex items-center gap-1"><Edit2 size={12}/> Edit Contact Info</button>
-          </div>
-        )}
-
-        {/* Profile Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border text-center relative overflow-hidden">
-          <div className={`absolute top-0 left-0 w-full h-2 ${isApproved ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' : 'bg-gray-300'}`}></div>
-          <img src={profile.photo_url} alt="Profile" className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md" />
-          <h1 className="text-2xl font-black text-gray-900">{profile.stage_name || profile.full_name}</h1>
-          <p className="text-sm text-gray-500">{profile.contestant_id} • {profile.church}</p>
-          {isApproved && isVerified && (
-            <div className="mt-3 inline-block bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-200">
-              <CheckCircle2 size={12} className="inline mr-1"/> Approved & Verified
-            </div>
-          )}
+      {/* Stats */}
+      <div className={`grid grid-cols-2 gap-3 ${!isApproved ? 'opacity-50' : ''}`}>
+        <div className="bg-white p-4 rounded-xl shadow-sm border text-center relative">
+          {!isApproved && <div className="absolute top-2 right-2 text-gray-400"><Lock size={12}/></div>}
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Total Votes</div>
+          <div className="text-3xl font-black text-black mt-1">{isApproved ? profile.total_votes.toLocaleString() : '0'}</div>
         </div>
-
-        {/* Stats (Locked if pending) */}
-        <div className={`grid grid-cols-2 gap-4 ${!isApproved ? 'opacity-50' : ''}`}>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border text-center relative">
-            {!isApproved && <div className="absolute top-3 right-3 text-gray-400"><Lock size={14}/></div>}
-            <div className="text-sm font-bold text-gray-500 uppercase">Total Votes</div>
-            <div className="text-4xl font-black text-black mt-2">{isApproved ? profile.total_votes.toLocaleString() : '0'}</div>
-          </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border text-center relative">
-            {!isApproved && <div className="absolute top-3 right-3 text-gray-400"><Lock size={14}/></div>}
-            <div className="text-sm font-bold text-gray-500 uppercase">Current Rank</div>
-            <div className="text-4xl font-black text-black mt-2">{isApproved ? `#${rank}` : '-'}</div>
-          </div>
+        <div className="bg-white p-4 rounded-xl shadow-sm border text-center relative">
+          {!isApproved && <div className="absolute top-2 right-2 text-gray-400"><Lock size={12}/></div>}
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Current Rank</div>
+          <div className="text-3xl font-black text-black mt-1">{isApproved ? `#${rank}` : '-'}</div>
         </div>
+      </div>
 
-        {/* Motivation */}
-        <div className="bg-black text-white p-6 rounded-2xl shadow-md text-center">
-          <p className="font-bold italic text-lg">"{getMotivation(rank)}"</p>
+      {/* Motivation */}
+      <div className="bg-black text-white p-5 rounded-xl shadow-md text-center">
+        <p className="font-bold italic text-sm">"{getMotivation(rank)}"</p>
+      </div>
+
+      {/* Share Tools */}
+      <div className={`bg-white p-5 rounded-xl shadow-sm border ${!isFullyReady ? 'opacity-50' : ''}`}>
+        <h2 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+          Your Unique Voting Link
+          {!isFullyReady && <Lock size={14} className="text-gray-400"/>}
+        </h2>
+        <div className="flex gap-2">
+          <input type="text" readOnly value={`${typeof window !== 'undefined' ? window.location.origin : ''}/vote/${profile.contestant_id}`} className="w-full p-2.5 bg-gray-50 border rounded-lg text-xs text-gray-600 outline-none" />
+          <button onClick={copyLink} disabled={!isFullyReady} className="bg-black text-white px-4 py-2 rounded-lg font-bold text-xs whitespace-nowrap flex items-center gap-1 disabled:bg-gray-400"><Copy size={14}/> Copy</button>
         </div>
-
-        {/* Share Tools (Locked if not fully ready) */}
-        <div className={`bg-white p-6 rounded-2xl shadow-sm border ${!isFullyReady ? 'opacity-50' : ''}`}>
-          <h2 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-            Your Unique Voting Link
-            {!isFullyReady && <Lock size={14} className="text-gray-400"/>}
-          </h2>
-          <p className="text-xs text-gray-500 mb-3">{isPending ? 'Unlocks after admin approval.' : (!isVerified ? 'Unlocks after verifying your identity.' : 'Share this link to get votes.')}</p>
-          <div className="flex gap-2">
-            <input type="text" readOnly value={`${typeof window !== 'undefined' ? window.location.origin : ''}/vote/${profile.contestant_id}`} className="w-full p-3 bg-gray-50 border rounded-lg text-sm text-gray-600 outline-none" />
-            <button onClick={copyLink} disabled={!isFullyReady} className="bg-black text-white px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap flex items-center gap-1 disabled:bg-gray-400"><Copy size={14}/> Copy</button>
-          </div>
-        </div>
-
-        {/* Voter Log */}
-        <div className={`bg-white border rounded-2xl shadow-sm overflow-hidden ${!isApproved ? 'opacity-50' : ''}`}>
-          <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
-            <h2 className="font-bold text-lg">Recent Supporters</h2>
-            {!isApproved && <Lock size={14} className="text-gray-400"/>}
-          </div>
-          <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-            {!isApproved ? (
-              <div className="p-6 text-center text-gray-500 text-sm">Supporters will appear here once you are approved.</div>
-            ) : voters.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">No votes yet. Start sharing your link!</div>
-            ) : (
-              voters.map(v => (
-                <div key={v.id} className="p-4 flex justify-between items-center">
-                  <div>
-                    <div className="font-bold text-sm">{v.voter_email.split('@')[0]}</div>
-                    <div className="text-xs text-gray-500">{new Date(v.created_at).toLocaleString()}</div>
-                  </div>
-                  <div className="font-black text-green-600">+{v.votes_credited} votes</div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
       </div>
 
       {/* Edit Modal */}
@@ -227,31 +213,31 @@ export default function ContestantDashboard() {
                 <h3 className="text-lg font-black">Edit Contact Info</h3>
                 <button onClick={() => setIsEditing(false)}><X size={20}/></button>
               </div>
-              <div className="space-y-4">
-                <div><label className="block text-sm font-bold mb-1">Email</label><input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full p-3 border rounded-lg" /></div>
-                <div><label className="block text-sm font-bold mb-1">Phone</label><input type="tel" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full p-3 border rounded-lg" /></div>
+              <div className="space-y-3">
+                <div><label className="block text-xs font-bold mb-1">Email</label><input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" /></div>
+                <div><label className="block text-xs font-bold mb-1">Phone</label><input type="tel" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" /></div>
               </div>
               <div className="flex gap-2 mt-6">
-                <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-200 text-black font-bold py-3 rounded-lg">Cancel</button>
-                <button onClick={saveContactInfo} className="flex-1 bg-black text-white font-bold py-3 rounded-lg">Save & Re-Verify</button>
+                <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-200 text-black font-bold py-2.5 rounded-lg text-sm">Cancel</button>
+                <button onClick={saveContactInfo} className="flex-1 bg-black text-white font-bold py-2.5 rounded-lg text-sm">Save & Re-Verify</button>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Mock SMS Modal */}
+      {/* SMS Modal */}
       <AnimatePresence>
         {showSmsModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
               <h3 className="text-lg font-black mb-2">Verify Phone</h3>
-              <p className="text-sm text-gray-500 mb-4">Enter the 6-digit code sent to {profile.phone}</p>
-              <p className="text-xs text-blue-600 mb-2 font-bold">(Demo Code: 123456)</p>
-              <input type="text" maxLength={6} value={smsCode} onChange={e => setSmsCode(e.target.value)} className="w-full p-3 border rounded-lg text-center text-2xl tracking-widest mb-4" placeholder="000000" />
+              <p className="text-xs text-gray-500 mb-2">Enter code sent to {profile.phone}</p>
+              <p className="text-[10px] text-blue-600 mb-4 font-bold">(Demo Code: 123456)</p>
+              <input type="text" maxLength={6} value={smsCode} onChange={e => setSmsCode(e.target.value)} className="w-full p-3 border rounded-lg text-center text-xl tracking-widest mb-4" placeholder="000000" />
               <div className="flex gap-2">
-                <button onClick={() => setShowSmsModal(false)} className="flex-1 bg-gray-200 text-black font-bold py-3 rounded-lg">Cancel</button>
-                <button onClick={submitSmsCode} className="flex-1 bg-black text-white font-bold py-3 rounded-lg">Verify</button>
+                <button onClick={() => setShowSmsModal(false)} className="flex-1 bg-gray-200 text-black font-bold py-2.5 rounded-lg text-sm">Cancel</button>
+                <button onClick={submitSmsCode} className="flex-1 bg-black text-white font-bold py-2.5 rounded-lg text-sm">Verify</button>
               </div>
             </div>
           </motion.div>
