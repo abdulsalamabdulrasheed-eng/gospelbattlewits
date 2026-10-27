@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, Mail, Phone, Edit2, CheckCircle2, Lock, X, Copy } from 'lucide-react';
+import { ShieldCheck, Mail, Phone, Edit2, CheckCircle2, Lock, X, Copy, Clock, AlertCircle } from 'lucide-react';
 
 export default function ContestantDashboard() {
   const [profile, setProfile] = useState<any>(null);
@@ -13,15 +13,18 @@ export default function ContestantDashboard() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Edit Modal State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ email: '', phone: '' });
-  
-  // Mock SMS State
   const [showSmsModal, setShowSmsModal] = useState(false);
   const [smsCode, setSmsCode] = useState('');
 
+  const isPending = profile?.status === 'pending';
+  const isApproved = profile?.status === 'approved';
+  const isVerified = profile?.email_verified && profile?.phone_verified;
+  const isFullyReady = isApproved && isVerified;
+
   const getMotivation = (rank: number) => {
+    if (isPending) return "Preparation is the key to victory. Verify your email and phone now, so you're ready to campaign the moment you're approved!";
     if (rank === 0) return "Welcome! Share your link to start getting votes.";
     if (rank <= 3) return "You are in the Top 3! Keep pushing, the crown is within reach! 👑";
     if (rank <= 10) return "You're in the Top 10. Don't stop now, your supporters are counting on you! 🔥";
@@ -32,17 +35,11 @@ export default function ContestantDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/contestant/login');
-        return;
-      }
+      if (!user) { router.push('/contestant/login'); return; }
 
       const { data: contestant } = await supabase.from('contestants').select('*').eq('email', user.email).single();
-
-      if (!contestant) {
-        router.push('/contestant/login');
-        return;
-      }
+      if (!contestant) { router.push('/contestant/login'); return; }
+      
       setProfile(contestant);
       setEditForm({ email: contestant.email, phone: contestant.phone });
 
@@ -65,21 +62,15 @@ export default function ContestantDashboard() {
     router.push('/contestant/login');
   };
 
-  const isVerified = profile?.email_verified && profile?.phone_verified;
-
   const handleVerifyEmail = async () => {
-    // In a real app, Supabase sends a magic link. For this demo, we simulate it.
     alert("A verification link has been sent to your email. Click it to verify.");
-    // Simulate verification for the demo
     setTimeout(async () => {
       await supabase.from('contestants').update({ email_verified: true }).eq('id', profile.id);
       setProfile({ ...profile, email_verified: true });
     }, 3000);
   };
 
-  const handleVerifyPhone = () => {
-    setShowSmsModal(true);
-  };
+  const handleVerifyPhone = () => setShowSmsModal(true);
 
   const submitSmsCode = async () => {
     if (smsCode === '123456') {
@@ -96,7 +87,7 @@ export default function ContestantDashboard() {
     await supabase.from('contestants').update({ 
       email: editForm.email, 
       phone: editForm.phone,
-      email_verified: false, // Reset verification on change
+      email_verified: false,
       phone_verified: false
     }).eq('id', profile.id);
     
@@ -105,24 +96,12 @@ export default function ContestantDashboard() {
   };
 
   const copyLink = () => {
+    if (!isFullyReady) return;
     navigator.clipboard.writeText(`${window.location.origin}/vote/${profile.contestant_id}`);
     alert("Link copied to clipboard!");
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-bold">Loading Dashboard...</div>;
-
-  if (profile.status === 'pending') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4"><ShieldCheck size={32}/></div>
-          <h1 className="text-2xl font-black text-gray-900 mb-2">Application Under Review</h1>
-          <p className="text-gray-500 text-sm mb-6">Your payment was successful! The admin is currently reviewing your media. You will be notified once approved.</p>
-          <button onClick={handleLogout} className="w-full bg-black text-white font-bold py-3 rounded-lg">Logout</button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -133,21 +112,33 @@ export default function ContestantDashboard() {
 
       <div className="max-w-3xl mx-auto p-4 mt-6 space-y-6">
         
-        {/* Verification Gate */}
+        {/* Status Banner */}
+        {isPending && (
+          <div className="bg-orange-50 rounded-2xl p-5 shadow-sm border border-orange-200 flex items-start gap-4">
+            <div className="p-2 bg-orange-100 rounded-full shrink-0"><Clock size={20} className="text-orange-600"/></div>
+            <div>
+              <h2 className="text-base font-black text-orange-800">Application Under Review</h2>
+              <p className="text-sm text-orange-700 mt-1">Your payment was successful. The admin is currently reviewing your media. You will be notified once approved.</p>
+              <p className="text-xs text-orange-600 mt-2 font-semibold">Submitted: {new Date(profile.created_at).toLocaleString()}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Verification Gate (Active during pending) */}
         {!isVerified && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-orange-200">
-            <h2 className="text-lg font-black text-orange-600 mb-2 flex items-center gap-2"><Lock size={18}/> Verify Your Identity</h2>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <h2 className="text-lg font-black text-gray-900 mb-2 flex items-center gap-2"><Lock size={18}/> Verify Your Identity</h2>
             <p className="text-sm text-gray-600 mb-4">You must verify your email and phone number to unlock your share buttons and start campaigning.</p>
             
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                <div className="flex items-center gap-2 text-sm font-bold"><Mail size={16}/> {profile.email}</div>
-                {profile.email_verified ? <span className="text-green-600 text-xs font-bold flex items-center gap-1"><CheckCircle2 size={14}/> Verified</span> : <button onClick={handleVerifyEmail} className="bg-black text-white text-xs px-3 py-1.5 rounded-md">Verify Email</button>}
+                <div className="flex items-center gap-2 text-sm font-bold truncate"><Mail size={16}/> {profile.email}</div>
+                {profile.email_verified ? <span className="text-green-600 text-xs font-bold flex items-center gap-1"><CheckCircle2 size={14}/> Verified</span> : <button onClick={handleVerifyEmail} className="bg-black text-white text-xs px-3 py-1.5 rounded-md shrink-0">Verify Email</button>}
               </div>
               
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                <div className="flex items-center gap-2 text-sm font-bold"><Phone size={16}/> {profile.phone}</div>
-                {profile.phone_verified ? <span className="text-green-600 text-xs font-bold flex items-center gap-1"><CheckCircle2 size={14}/> Verified</span> : <button onClick={handleVerifyPhone} className="bg-black text-white text-xs px-3 py-1.5 rounded-md">Verify Phone</button>}
+                <div className="flex items-center gap-2 text-sm font-bold truncate"><Phone size={16}/> {profile.phone}</div>
+                {profile.phone_verified ? <span className="text-green-600 text-xs font-bold flex items-center gap-1"><CheckCircle2 size={14}/> Verified</span> : <button onClick={handleVerifyPhone} className="bg-black text-white text-xs px-3 py-1.5 rounded-md shrink-0">Verify Phone</button>}
               </div>
             </div>
 
@@ -157,21 +148,28 @@ export default function ContestantDashboard() {
 
         {/* Profile Card */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 to-yellow-600"></div>
+          <div className={`absolute top-0 left-0 w-full h-2 ${isApproved ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' : 'bg-gray-300'}`}></div>
           <img src={profile.photo_url} alt="Profile" className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md" />
           <h1 className="text-2xl font-black text-gray-900">{profile.stage_name || profile.full_name}</h1>
           <p className="text-sm text-gray-500">{profile.contestant_id} • {profile.church}</p>
+          {isApproved && isVerified && (
+            <div className="mt-3 inline-block bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-200">
+              <CheckCircle2 size={12} className="inline mr-1"/> Approved & Verified
+            </div>
+          )}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border text-center">
+        {/* Stats (Locked if pending) */}
+        <div className={`grid grid-cols-2 gap-4 ${!isApproved ? 'opacity-50' : ''}`}>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border text-center relative">
+            {!isApproved && <div className="absolute top-3 right-3 text-gray-400"><Lock size={14}/></div>}
             <div className="text-sm font-bold text-gray-500 uppercase">Total Votes</div>
-            <div className="text-4xl font-black text-black mt-2">{profile.total_votes.toLocaleString()}</div>
+            <div className="text-4xl font-black text-black mt-2">{isApproved ? profile.total_votes.toLocaleString() : '0'}</div>
           </div>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border text-center">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border text-center relative">
+            {!isApproved && <div className="absolute top-3 right-3 text-gray-400"><Lock size={14}/></div>}
             <div className="text-sm font-bold text-gray-500 uppercase">Current Rank</div>
-            <div className="text-4xl font-black text-black mt-2">#{rank}</div>
+            <div className="text-4xl font-black text-black mt-2">{isApproved ? `#${rank}` : '-'}</div>
           </div>
         </div>
 
@@ -180,22 +178,29 @@ export default function ContestantDashboard() {
           <p className="font-bold italic text-lg">"{getMotivation(rank)}"</p>
         </div>
 
-        {/* Share Tools (Locked if not verified) */}
-        <div className={`bg-white p-6 rounded-2xl shadow-sm border ${!isVerified ? 'opacity-50 pointer-events-none' : ''}`}>
-          <h2 className="font-bold text-gray-900 mb-2">Your Unique Voting Link</h2>
+        {/* Share Tools (Locked if not fully ready) */}
+        <div className={`bg-white p-6 rounded-2xl shadow-sm border ${!isFullyReady ? 'opacity-50' : ''}`}>
+          <h2 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+            Your Unique Voting Link
+            {!isFullyReady && <Lock size={14} className="text-gray-400"/>}
+          </h2>
+          <p className="text-xs text-gray-500 mb-3">{isPending ? 'Unlocks after admin approval.' : (!isVerified ? 'Unlocks after verifying your identity.' : 'Share this link to get votes.')}</p>
           <div className="flex gap-2">
             <input type="text" readOnly value={`${typeof window !== 'undefined' ? window.location.origin : ''}/vote/${profile.contestant_id}`} className="w-full p-3 bg-gray-50 border rounded-lg text-sm text-gray-600 outline-none" />
-            <button onClick={copyLink} className="bg-black text-white px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap flex items-center gap-1"><Copy size={14}/> Copy</button>
+            <button onClick={copyLink} disabled={!isFullyReady} className="bg-black text-white px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap flex items-center gap-1 disabled:bg-gray-400"><Copy size={14}/> Copy</button>
           </div>
         </div>
 
         {/* Voter Log */}
-        <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-6 border-b bg-gray-50">
+        <div className={`bg-white border rounded-2xl shadow-sm overflow-hidden ${!isApproved ? 'opacity-50' : ''}`}>
+          <div className="p-6 border-b bg-gray-50 flex justify-between items-center">
             <h2 className="font-bold text-lg">Recent Supporters</h2>
+            {!isApproved && <Lock size={14} className="text-gray-400"/>}
           </div>
           <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-            {voters.length === 0 ? (
+            {!isApproved ? (
+              <div className="p-6 text-center text-gray-500 text-sm">Supporters will appear here once you are approved.</div>
+            ) : voters.length === 0 ? (
               <div className="p-6 text-center text-gray-500">No votes yet. Start sharing your link!</div>
             ) : (
               voters.map(v => (
