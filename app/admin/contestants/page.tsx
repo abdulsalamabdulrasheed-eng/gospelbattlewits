@@ -14,6 +14,15 @@ export default function ManageContestants() {
   const [editing, setEditing] = useState<any>(null);
   const [editForm, setEditForm] = useState({ stage_name: '', church: '', bio: '' });
 
+  // Custom Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    action: () => void;
+    isDanger: boolean;
+  }>({ show: false, title: '', message: '', action: () => {}, isDanger: false });
+
   useEffect(() => {
     fetchContestants();
   }, []);
@@ -37,20 +46,36 @@ export default function ManageContestants() {
     setLoading(false);
   };
 
+  const askConfirmation = (title: string, message: string, action: () => void, isDanger = false) => {
+    setConfirmModal({ show: true, title, message, action, isDanger });
+  };
+
   const updateStatus = async (id: string, status: string, name: string, contestantId: string) => {
-    if (!confirm(`Are you sure you want to set ${name} to ${status.toUpperCase()}?`)) return;
-    
-    await supabase.from('contestants').update({ status }).eq('id', id);
-    await logAdminAction(status, `${name} (${contestantId})`, `Admin set status to ${status}`);
-    fetchContestants();
+    askConfirmation(
+      `Confirm Action`,
+      `Are you sure you want to set ${name} to ${status.toUpperCase()}?`,
+      async () => {
+        await supabase.from('contestants').update({ status }).eq('id', id);
+        await logAdminAction(status, `${name} (${contestantId})`, `Admin set status to ${status}`);
+        fetchContestants();
+        setConfirmModal({ ...confirmModal, show: false });
+      },
+      status === 'rejected' || status === 'disqualified'
+    );
   };
 
   const deleteContestant = async (id: string, name: string, contestantId: string) => {
-    if (!confirm(`WARNING: This will permanently delete ${name}. This cannot be undone. Proceed?`)) return;
-    
-    await supabase.from('contestants').delete().eq('id', id);
-    await logAdminAction('delete', `${name} (${contestantId})`, `Admin deleted the contestant`);
-    fetchContestants();
+    askConfirmation(
+      `Delete Contestant`,
+      `WARNING: This will permanently delete ${name}. This cannot be undone. Proceed?`,
+      async () => {
+        await supabase.from('contestants').delete().eq('id', id);
+        await logAdminAction('delete', `${name} (${contestantId})`, `Admin deleted the contestant`);
+        fetchContestants();
+        setConfirmModal({ ...confirmModal, show: false });
+      },
+      true
+    );
   };
 
   const openEdit = (contestant: any) => {
@@ -89,6 +114,24 @@ export default function ManageContestants() {
           className="w-full p-4 border border-gray-300 rounded-xl shadow-sm outline-none focus:border-black"
         />
       </div>
+
+      {/* CUSTOM CONFIRMATION MODAL */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in duration-200">
+            <div className={`p-4 text-center ${confirmModal.isDanger ? 'bg-red-50' : 'bg-green-50'}`}>
+              <h3 className={`text-lg font-black ${confirmModal.isDanger ? 'text-red-700' : 'text-green-700'}`}>{confirmModal.title}</h3>
+            </div>
+            <div className="p-6 text-center">
+              <p className="text-gray-600 text-sm mb-6">{confirmModal.message}</p>
+              <div className="flex gap-2">
+                <button onClick={() => setConfirmModal({ ...confirmModal, show: false })} className="flex-1 bg-gray-200 text-black font-bold py-3 rounded-lg">Cancel</button>
+                <button onClick={confirmModal.action} className={`flex-1 text-white font-bold py-3 rounded-lg ${confirmModal.isDanger ? 'bg-red-600' : 'bg-black'}`}>Confirm</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {editing && (
