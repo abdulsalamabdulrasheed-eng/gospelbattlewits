@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { logAdminAction } from '@/utils/audit';
-import { ShieldAlert, Power, Activity } from 'lucide-react';
+import { ShieldAlert, Power, Activity, Wrench } from 'lucide-react';
 import { useModal } from '@/utils/useModal';
 
 export default function AdminSettings() {
@@ -24,7 +24,10 @@ export default function AdminSettings() {
   const toggleSetting = async (key: string, currentValue: boolean) => {
     const { error } = await supabase.from('settings').update({ value: !currentValue, updated_at: new Date().toISOString() }).eq('key', key);
     if (error) return showModal({ title: 'Error', message: error.message, isDanger: true, showCancel: false });
+    
+    // LOG THE ACTION
     await logAdminAction('toggle_setting', key, `Admin set ${key} to ${!currentValue}`);
+    
     fetchSettings();
   };
 
@@ -45,6 +48,10 @@ export default function AdminSettings() {
 
   if (loading) return <div className="p-10 text-sm font-bold text-gray-500">Loading...</div>;
 
+  const liveSettings = settings.filter(s => ['registration_open', 'voting_open'].includes(s.key));
+  const securitySettings = settings.filter(s => ['ip_tracking'].includes(s.key));
+  const systemSettings = settings.filter(s => ['maintenance_mode'].includes(s.key));
+
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto">
       <div className="mb-8">
@@ -60,10 +67,10 @@ export default function AdminSettings() {
             <h2 className="text-sm font-bold text-gray-900">Live Controls</h2>
           </div>
           <div className="divide-y divide-gray-100">
-            {settings.filter(s => s.key === 'registration_open' || s.key === 'voting_open').map((s) => (
+            {liveSettings.map((s) => (
               <div key={s.key} className="p-4 flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-bold text-gray-900 capitalize">{s.key.replace('_', ' ')}</div>
+                  <div className="text-sm font-bold text-gray-900 capitalize">{s.key.replace(/_/g, ' ')}</div>
                   <div className="text-xs text-gray-500 mt-0.5">{s.description}</div>
                 </div>
                 <button
@@ -84,15 +91,39 @@ export default function AdminSettings() {
             <h2 className="text-sm font-bold text-gray-900">Security & Anti-Fraud</h2>
           </div>
           <div className="divide-y divide-gray-100">
-            {settings.filter(s => s.key === 'ip_tracking').map((s) => (
+            {securitySettings.map((s) => (
               <div key={s.key} className="p-4 flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-bold text-gray-900 capitalize">{s.key.replace('_', ' ')}</div>
+                  <div className="text-sm font-bold text-gray-900 capitalize">{s.key.replace(/_/g, ' ')}</div>
                   <div className="text-xs text-gray-500 mt-0.5">{s.description}</div>
                 </div>
                 <button
                   onClick={() => toggleSetting(s.key, s.value)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${s.value ? 'bg-green-500' : 'bg-gray-300'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${s.value ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* System Controls */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b bg-gray-50 flex items-center gap-2">
+            <Wrench size={18} className="text-gray-700" />
+            <h2 className="text-sm font-bold text-gray-900">System</h2>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {systemSettings.map((s) => (
+              <div key={s.key} className="p-4 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-bold text-gray-900 capitalize">{s.key.replace(/_/g, ' ')}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{s.description}</div>
+                </div>
+                <button
+                  onClick={() => toggleSetting(s.key, s.value)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${s.value ? 'bg-red-500' : 'bg-gray-300'}`}
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${s.value ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
