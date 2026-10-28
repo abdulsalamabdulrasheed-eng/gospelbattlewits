@@ -2,9 +2,9 @@ import { supabase } from './supabase';
 
 export const logAdminAction = async (action: string, target: string, details: string) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('No user found for audit log');
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('Audit Log Failed: No authenticated user.', authError);
       return;
     }
 
@@ -16,11 +16,11 @@ export const logAdminAction = async (action: string, target: string, details: st
     });
 
     if (error) {
-      console.error('Audit log insert failed:', error.message);
+      console.error('Audit Log Insert Failed:', error.message);
     } else {
-      console.log(`Audit Log: ${action} on ${target}`);
+      console.log(`✅ Audit Log: ${action} on ${target}`);
     }
   } catch (err) {
-    console.error('Audit log exception:', err);
+    console.error('Audit Log Exception:', err);
   }
 };

@@ -100,35 +100,33 @@ export default function ContestantProfile() {
 
       <div className="max-w-4xl mx-auto md:mt-6 md:rounded-2xl md:overflow-hidden md:shadow-lg md:border bg-white">
         
-        {/* Video & Profile Header */}
-        <div className="relative">
-          <div className="w-full aspect-video bg-gray-900 flex items-center justify-center">
-            {contestant.video_url ? (
-              <video controls className="w-full h-full object-contain" src={contestant.video_url} />
-            ) : (
-              <p className="text-gray-400 text-sm">No video available</p>
-            )}
-          </div>
-          
-          {/* Profile Photo Overlay */}
-          <div className="absolute -bottom-10 left-4 md:left-8">
-            <img src={contestant.photo_url} alt="Profile" className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover border-4 border-white shadow-lg bg-white" />
+        {/* Profile Header (Horizontal Layout) */}
+        <div className="p-4 md:p-8 flex items-center gap-4 md:gap-6 border-b border-gray-100">
+          <img 
+            src={contestant.photo_url} 
+            alt="Profile" 
+            className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover border-2 border-gray-200 shadow-md shrink-0" 
+          />
+          <div className="flex-1">
+            <h1 className="text-xl md:text-3xl font-black text-gray-900 leading-tight">{contestant.stage_name || contestant.full_name}</h1>
+            <p className="text-xs md:text-sm text-gray-500 font-semibold mt-1">{contestant.church}</p>
+            <div className="mt-2 md:mt-3 inline-flex items-center gap-1 bg-gray-100 px-3 py-1 rounded-lg">
+              <span className="text-lg md:text-2xl font-black text-black">{contestant.total_votes.toLocaleString()}</span>
+              <span className="text-[10px] md:text-xs text-gray-500 uppercase font-bold tracking-wider">Votes</span>
+            </div>
           </div>
         </div>
 
-        <div className="p-4 md:p-8 pt-14 md:pt-16">
-          {/* Name & Stats */}
-          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl md:text-4xl font-black text-gray-900 tracking-tight">{contestant.stage_name || contestant.full_name}</h1>
-              <p className="text-sm md:text-base text-gray-500 font-semibold mt-1">{contestant.church}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 inline-block md:text-right">
-              <div className="text-2xl md:text-3xl font-black text-black">{contestant.total_votes.toLocaleString()}</div>
-              <div className="text-[10px] md:text-xs text-gray-500 uppercase font-bold tracking-wider">Votes</div>
-            </div>
-          </div>
+        {/* Video */}
+        <div className="w-full aspect-video bg-gray-900 flex items-center justify-center">
+          {contestant.video_url ? (
+            <video controls className="w-full h-full object-contain" src={contestant.video_url} />
+          ) : (
+            <p className="text-gray-400 text-sm">No video available</p>
+          )}
+        </div>
 
+        <div className="p-4 md:p-8">
           <p className="text-sm md:text-base text-gray-600 mb-8">{contestant.bio || 'No bio provided.'}</p>
 
           {/* Voting Section */}
