@@ -21,7 +21,7 @@ export default function GeneralLogin() {
     setLoading(true);
     setError('');
 
-    // 1. Authenticate with Email/Password
+    // 1. Authenticate
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: password,
@@ -37,16 +37,12 @@ export default function GeneralLogin() {
     const { data: adminData } = await supabase.from('admins').select('id').eq('id', authData.user.id).maybeSingle();
 
     if (adminData) {
-      // Check MFA status
       const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      
       if (mfaData?.currentLevel === 'aal1' && mfaData?.nextLevel === 'aal2') {
-        // Admin needs to enter MFA code
         setShowMfa(true);
         setLoading(false);
         return;
       } else {
-        // Admin logged in (MFA not required or not set up)
         router.push('/admin');
         return;
       }
@@ -59,7 +55,6 @@ export default function GeneralLogin() {
       return;
     }
 
-    // Not an admin or contestant
     await supabase.auth.signOut();
     setError('Account authenticated, but no profile found. Please register.');
     setLoading(false);
@@ -128,13 +123,7 @@ export default function GeneralLogin() {
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">Password</label>
               <div className="relative">
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  className="w-full p-2.5 pr-10 border rounded-lg outline-none focus:border-black text-sm" 
-                  required 
-                />
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-2.5 pr-10 border rounded-lg outline-none focus:border-black text-sm" required />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>

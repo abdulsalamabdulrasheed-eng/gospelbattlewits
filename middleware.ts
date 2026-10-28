@@ -22,36 +22,40 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  // 1. Protect Admin Routes
-  if (path.startsWith('/admin')) {
-    if (!user) return NextResponse.redirect(new URL('/login', request.url))
-    
-    // Check if Admin
+  // 1. Protect Admin Routes (Server-Side)
+  if (path.startsWith('/admin') && path !== '/admin/setup-2fa') {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    // Verify the user is actually an Admin
     const { data: admin } = await supabase.from('admins').select('id').eq('id', user.id).single()
-    if (!admin) return NextResponse.redirect(new URL('/login', request.url))
+    if (!admin) {
+      // Logged in but NOT an admin -> kick them out
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
   }
 
   // 2. Protect Contestant Routes
-  if (path.startsWith('/contestant/dashboard')) {
-    if (!user) return NextResponse.redirect(new URL('/login', request.url))
-    
-    // Check if Contestant
+  if (path.startsWith('/contestant') && !path.includes('/login')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    // Verify the user is a Contestant
     const { data: contestant } = await supabase.from('contestants').select('id').eq('email', user.email).single()
-    if (!contestant) return NextResponse.redirect(new URL('/login', request.url))
+    if (!contestant) {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
   }
 
-  // 3. Redirect logged-in users away from login
-  if (path === '/login' && user) {
-    const { data: admin } = await supabase.from('admins').select('id').eq('id', user.id).single()
-    if (admin) return NextResponse.redirect(new URL('/admin', request.url))
-    
-    const { data: contestant } = await supabase.from('contestants').select('id').eq('email', user.email).single()
-    if (contestant) return NextResponse.redirect(new URL('/contestant/dashboard', request.url))
-  }
+  // 3. NEVER auto-redirect from /login. Force them to log in again.
+  // If they are logged in and visit /login, we do nothing. They see the form.
+  // This prevents the "Contestant sees Admin panel" breach.
 
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/contestant/dashboard', '/login'],
+  matcher: ['/admin/:path*', '/contestant/:path*'],
 }
