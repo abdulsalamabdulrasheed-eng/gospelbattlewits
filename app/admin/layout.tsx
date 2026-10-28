@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Users, CreditCard, ShieldCheck, 
-  Settings, LogOut, Menu, X, FileText, ChevronLeft, ChevronRight, BookOpen
+  Settings, LogOut, Menu, X, FileText, ChevronLeft, ChevronRight, BookOpen, ExternalLink
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -17,11 +17,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
-    // Handle mobile responsiveness
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarOpen(false);
-      }
+      if (window.innerWidth < 768) setIsSidebarOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -46,9 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     },
     {
       title: 'Content',
-      items: [
-        { name: 'Rules & Guidelines', path: '/admin/rules', icon: BookOpen },
-      ]
+      items: [{ name: 'Rules & Guidelines', path: '/admin/rules', icon: BookOpen }]
     },
     {
       title: 'Security & Audit',
@@ -96,10 +91,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </div>
                 )}
               </div>
-              <button 
-                onClick={() => setIsCollapsed(!isCollapsed)} 
-                className="text-gray-500 hover:text-white transition p-1"
-              >
+              <button onClick={() => setIsCollapsed(!isCollapsed)} className="text-gray-500 hover:text-white transition p-1">
                 {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               </button>
             </div>
@@ -132,7 +124,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               ))}
             </nav>
 
-            <div className="p-2 border-t border-gray-800 pb-20 md:pb-2">
+            <div className="p-2 border-t border-gray-800 pb-20 md:pb-2 space-y-1">
+              {/* Back to Site Link */}
+              <Link
+                href="/"
+                className="flex items-center gap-3 px-2.5 py-2.5 text-xs font-bold text-blue-400 hover:bg-gray-800 rounded-lg transition"
+              >
+                <ExternalLink size={16} className="shrink-0" />
+                {!isCollapsed && <span>Back to Site</span>}
+              </Link>
+              
               <button 
                 onClick={handleLogout} 
                 className="w-full flex items-center gap-3 px-2.5 py-2.5 text-xs font-bold text-red-400 hover:bg-gray-800 rounded-lg transition"
@@ -158,12 +159,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto h-screen w-full">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="h-full"
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="h-full">
           {children}
         </motion.div>
       </div>

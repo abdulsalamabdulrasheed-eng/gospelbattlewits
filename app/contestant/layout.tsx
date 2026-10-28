@@ -3,12 +3,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
-import { useState } from 'react';
-import { LayoutDashboard, Megaphone, BarChart3, Settings, LogOut, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Megaphone, BarChart3, Settings, LogOut, BookOpen, ExternalLink, Home } from 'lucide-react';
 
 export default function ContestantLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -17,7 +15,7 @@ export default function ContestantLayout({ children }: { children: React.ReactNo
 
   const navItems = [
     { name: 'Overview', path: '/contestant/dashboard', icon: LayoutDashboard },
-    { name: 'My Campaign', path: '/contestant/campaign', icon: Megaphone },
+    { name: 'Campaign', path: '/contestant/campaign', icon: Megaphone },
     { name: 'Analytics', path: '/contestant/analytics', icon: BarChart3 },
     { name: 'Rules', path: '/contestant/rules', icon: BookOpen },
     { name: 'Settings', path: '/contestant/settings', icon: Settings },
@@ -28,7 +26,9 @@ export default function ContestantLayout({ children }: { children: React.ReactNo
       {/* Mobile Top Bar */}
       <div className="md:hidden bg-black text-white p-3 flex justify-between items-center sticky top-0 z-50">
         <div className="font-bold text-sm uppercase tracking-wider">Campaign Center</div>
-        <button onClick={handleLogout} className="text-xs bg-gray-800 px-3 py-1.5 rounded font-bold">Logout</button>
+        <Link href="/" className="text-xs bg-gray-800 px-3 py-1.5 rounded font-bold flex items-center gap-1">
+          <Home size={12}/> Site
+        </Link>
       </div>
 
       {/* Desktop Sidebar */}
@@ -56,7 +56,13 @@ export default function ContestantLayout({ children }: { children: React.ReactNo
           })}
         </nav>
         
-        <div className="p-3 border-t border-gray-800">
+        <div className="p-3 border-t border-gray-800 space-y-1">
+          <Link
+            href="/"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-blue-400 hover:bg-gray-800 rounded-lg transition"
+          >
+            <ExternalLink size={16} /> Back to Site
+          </Link>
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-gray-800 rounded-lg transition">
             <LogOut size={16} /> Logout
           </button>
