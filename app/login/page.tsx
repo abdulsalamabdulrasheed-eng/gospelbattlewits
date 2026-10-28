@@ -16,33 +16,12 @@ export default function GeneralLogin() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Force sign-out on page load to prevent session hijacking
-  useEffect(() => {
-    const clearSession = async () => {
-      // Check if the current session is an Admin or Contestant
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // If they are an Admin, we don't want to auto-sign them out if they're navigating back to admin
-        // But if they land on /login, we should treat it as a fresh login attempt
-        const { data: adminData } = await supabase.from('admins').select('id').eq('id', session.user.id).maybeSingle();
-        if (!adminData) {
-          // If they aren't an admin, sign out the old session
-          await supabase.auth.signOut();
-        }
-      }
-    };
-    clearSession();
-  }, []);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // 1. First, sign out any existing session
-    await supabase.auth.signOut();
-
-    // 2. Authenticate with Email/Password
+    // 1. Authenticate with Email/Password
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: password,
@@ -54,11 +33,10 @@ export default function GeneralLogin() {
       return;
     }
 
-    // 3. Check if Admin
+    // 2. Check if Admin
     const { data: adminData } = await supabase.from('admins').select('id').eq('id', authData.user.id).maybeSingle();
 
     if (adminData) {
-      // Check MFA
       const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (mfaData?.currentLevel === 'aal1' && mfaData?.nextLevel === 'aal2') {
         setShowMfa(true);
@@ -70,14 +48,14 @@ export default function GeneralLogin() {
       }
     }
 
-    // 4. Check if Contestant
+    // 3. Check if Contestant
     const { data: contestantData } = await supabase.from('contestants').select('id').eq('email', email.trim()).maybeSingle();
     if (contestantData) {
       router.push('/contestant/dashboard');
       return;
     }
 
-    // No profile found
+    // Not a valid role
     await supabase.auth.signOut();
     setError('Account authenticated, but no profile found. Please register.');
     setLoading(false);
