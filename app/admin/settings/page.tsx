@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { logAdminAction } from '@/utils/audit';
-import { ShieldAlert, Power, Activity, Wrench } from 'lucide-react';
+import { ShieldAlert, Power, Activity, Wrench, Lock } from 'lucide-react';
 import { useModal } from '@/utils/useModal';
+import Link from 'next/link';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<Record<string, boolean>>({
@@ -64,6 +65,21 @@ export default function AdminSettings() {
       </div>
 
       <div className="space-y-6">
+        {/* Security & 2FA */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b bg-gray-50 flex items-center gap-2">
+            <Lock size={18} className="text-gray-700" />
+            <h2 className="text-sm font-bold text-gray-900">Admin Security</h2>
+          </div>
+          <div className="p-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm font-bold text-gray-900">Two-Factor Authentication (2FA)</div>
+              <div className="text-xs text-gray-500 mt-0.5">Add an extra layer of security to your admin account.</div>
+            </div>
+            <Link href="/admin/setup-2fa" className="bg-black text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-gray-800 transition">Setup 2FA</Link>
+          </div>
+        </div>
+
         {/* Live Controls */}
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <div className="p-4 border-b bg-gray-50 flex items-center gap-2">

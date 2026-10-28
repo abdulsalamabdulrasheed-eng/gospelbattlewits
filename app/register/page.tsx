@@ -5,8 +5,6 @@ import { supabase } from '@/utils/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { UploadCloud, X } from 'lucide-react';
-import { CustomDatePicker } from '@/components/CustomDatePicker';
-import { format } from 'date-fns';
 
 declare global { interface Window { PaystackPop: any; } }
 const BUCKET_NAME = 'contestants media';
@@ -25,7 +23,6 @@ function RegisterForm() {
     full_name: '', stage_name: '', email: '', phone: '', church: '', dob: '', category: 'Singing', bio: '',
   });
   
-  const [dobDate, setDobDate] = useState<Date | undefined>(undefined);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -39,12 +36,6 @@ function RegisterForm() {
       showModal('Notice', 'Your credentials were not found. Please register below.', true);
     }
   }, [searchParams]);
-
-  useEffect(() => {
-    if (dobDate) {
-      setFormData(prev => ({ ...prev, dob: format(dobDate, 'yyyy-MM-dd') }));
-    }
-  }, [dobDate]);
 
   const checkRegistrationStatus = async () => {
     const { data } = await supabase.from('settings').select('value').eq('key', 'registration_open').maybeSingle();
@@ -176,7 +167,7 @@ function RegisterForm() {
     <main className="min-h-screen bg-gray-50 pb-20">
       {modal.show && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
             <div className={`p-4 text-center ${modal.isError ? 'bg-red-50' : 'bg-green-50'}`}>
               <h3 className={`text-lg font-black ${modal.isError ? 'text-red-700' : 'text-green-700'}`}>{modal.title}</h3>
             </div>
@@ -219,10 +210,7 @@ function RegisterForm() {
                   <div><label className="block text-sm font-bold text-gray-700 mb-1">Email *</label><input type="email" name="email" value={formData.email} required onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black" /></div>
                   <div><label className="block text-sm font-bold text-gray-700 mb-1">Phone *</label><input type="tel" name="phone" value={formData.phone} required onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black" /></div>
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Date of Birth *</label>
-                  <CustomDatePicker value={dobDate} onChange={setDobDate} />
-                </div>
+                <div><label className="block text-sm font-bold text-gray-700 mb-1">Date of Birth *</label><input type="date" name="dob" value={formData.dob} required onChange={handleChange} className="w-full p-3 border rounded-lg outline-none focus:border-black" /></div>
                 <div className="text-center mt-6"><button type="button" onClick={nextStep} className="w-full bg-black text-white font-bold py-4 rounded-xl">Continue</button></div>
                 <div className="text-center text-sm">Already have an account? <Link href="/login" className="font-bold underline">Login</Link></div>
               </div>
