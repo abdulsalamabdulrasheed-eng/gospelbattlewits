@@ -127,11 +127,20 @@ function RegisterForm() {
         ref: `REG-${Date.now()}`,
         metadata: { type: 'registration' },
         callback: function (response: any) {
+          // Make sure formData is sent as a top-level object
           fetch('/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              formData,
+              formData: {
+                full_name: formData.full_name,
+                stage_name: formData.stage_name,
+                email: formData.email,
+                phone: formData.phone,
+                church: formData.church,
+                category: formData.category,
+                bio: formData.bio,
+              },
               photoUrl: photoData.publicUrl,
               videoUrl: videoData.publicUrl,
               reference: response.reference,
