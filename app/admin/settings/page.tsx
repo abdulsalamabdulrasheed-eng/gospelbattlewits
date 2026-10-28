@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { logAdminAction } from '@/utils/audit';
-import { ShieldAlert, Power, Activity, Wrench, Lock } from 'lucide-react';
+import { ShieldAlert, Power, Activity, Wrench, Lock, Eye, EyeOff } from 'lucide-react';
 import { useModal } from '@/utils/useModal';
 import Link from 'next/link';
 
@@ -16,6 +16,12 @@ export default function AdminSettings() {
   });
   const [loading, setLoading] = useState(true);
   const { modal, showModal, hideModal } = useModal();
+
+  // Password Change State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -38,6 +44,28 @@ export default function AdminSettings() {
     await logAdminAction('toggle_setting', key, `Admin set ${key} to ${!currentValue}`);
     
     setSettings({ ...settings, [key]: !currentValue });
+  };
+
+  const changePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      return showModal({ title: 'Error', message: 'Passwords do not match.', isDanger: true, showCancel: false, onConfirm: hideModal });
+    }
+    if (newPassword.length < 6) {
+      return showModal({ title: 'Error', message: 'Password must be at least 6 characters.', isDanger: true, showCancel: false, onConfirm: hideModal });
+    }
+
+    setIsChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    
+    if (error) {
+      showModal({ title: 'Error', message: error.message, isDanger: true, showCancel: false, onConfirm: hideModal });
+    } else {
+      showModal({ title: 'Success', message: 'Password updated successfully.', showCancel: false, onConfirm: hideModal });
+      setNewPassword('');
+      setConfirmPassword('');
+      await logAdminAction('change_password', 'Admin', 'Admin updated their password');
+    }
+    setIsChangingPassword(false);
   };
 
   const resetLeaderboard = () => {
@@ -71,12 +99,41 @@ export default function AdminSettings() {
             <Lock size={18} className="text-gray-700" />
             <h2 className="text-sm font-bold text-gray-900">Admin Security</h2>
           </div>
-          <div className="p-4 flex items-center justify-between">
+          <div className="p-4 flex items-center justify-between border-b">
             <div>
               <div className="text-sm font-bold text-gray-900">Two-Factor Authentication (2FA)</div>
               <div className="text-xs text-gray-500 mt-0.5">Add an extra layer of security to your admin account.</div>
             </div>
             <Link href="/admin/setup-2fa" className="bg-black text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-gray-800 transition">Setup 2FA</Link>
+          </div>
+          
+          {/* Change Password Form */}
+          <div className="p-4">
+            <div className="text-sm font-bold text-gray-900 mb-2">Change Password</div>
+            <div className="space-y-2">
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="New Password" 
+                  value={newPassword} 
+                  onChange={e => setNewPassword(e.target.value)} 
+                  className="w-full p-2.5 pr-10 border rounded-lg text-sm" 
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  {showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}
+                </button>
+              </div>
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="Confirm New Password" 
+                value={confirmPassword} 
+                onChange={e => setConfirmPassword(e.target.value)} 
+                className="w-full p-2.5 border rounded-lg text-sm" 
+              />
+              <button onClick={changePassword} disabled={isChangingPassword} className="bg-gray-100 hover:bg-gray-200 text-black px-4 py-2 rounded-lg font-bold text-xs w-full">
+                {isChangingPassword ? 'Updating...' : 'Update Password'}
+              </button>
+            </div>
           </div>
         </div>
 
