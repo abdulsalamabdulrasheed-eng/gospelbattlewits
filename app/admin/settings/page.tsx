@@ -7,7 +7,12 @@ import { ShieldAlert, Power, Activity, Wrench } from 'lucide-react';
 import { useModal } from '@/utils/useModal';
 
 export default function AdminSettings() {
-  const [settings, setSettings] = useState<any[]>([]);
+  const [settings, setSettings] = useState<Record<string, boolean>>({
+    registration_open: true,
+    voting_open: true,
+    ip_tracking: true,
+    maintenance_mode: false,
+  });
   const [loading, setLoading] = useState(true);
   const { modal, showModal, hideModal } = useModal();
 
@@ -16,8 +21,12 @@ export default function AdminSettings() {
   }, []);
 
   const fetchSettings = async () => {
-    const { data } = await supabase.from('settings').select('*').order('key');
-    if (data) setSettings(data);
+    const { data } = await supabase.from('settings').select('*');
+    if (data) {
+      const newSettings: Record<string, boolean> = {};
+      data.forEach(s => { newSettings[s.key] = s.value; });
+      setSettings({ ...settings, ...newSettings });
+    }
     setLoading(false);
   };
 
@@ -25,10 +34,9 @@ export default function AdminSettings() {
     const { error } = await supabase.from('settings').update({ value: !currentValue, updated_at: new Date().toISOString() }).eq('key', key);
     if (error) return showModal({ title: 'Error', message: error.message, isDanger: true, showCancel: false });
     
-    // LOG THE ACTION
     await logAdminAction('toggle_setting', key, `Admin set ${key} to ${!currentValue}`);
     
-    fetchSettings();
+    setSettings({ ...settings, [key]: !currentValue });
   };
 
   const resetLeaderboard = () => {
@@ -48,10 +56,6 @@ export default function AdminSettings() {
 
   if (loading) return <div className="p-10 text-sm font-bold text-gray-500">Loading...</div>;
 
-  const liveSettings = settings.filter(s => ['registration_open', 'voting_open'].includes(s.key));
-  const securitySettings = settings.filter(s => ['ip_tracking'].includes(s.key));
-  const systemSettings = settings.filter(s => ['maintenance_mode'].includes(s.key));
-
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto">
       <div className="mb-8">
@@ -67,20 +71,24 @@ export default function AdminSettings() {
             <h2 className="text-sm font-bold text-gray-900">Live Controls</h2>
           </div>
           <div className="divide-y divide-gray-100">
-            {liveSettings.map((s) => (
-              <div key={s.key} className="p-4 flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold text-gray-900 capitalize">{s.key.replace(/_/g, ' ')}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{s.description}</div>
-                </div>
-                <button
-                  onClick={() => toggleSetting(s.key, s.value)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${s.value ? 'bg-green-500' : 'bg-gray-300'}`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${s.value ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
+            <div className="p-4 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-gray-900">Registration Open</div>
+                <div className="text-xs text-gray-500 mt-0.5">Allow new contestants to register.</div>
               </div>
-            ))}
+              <button onClick={() => toggleSetting('registration_open', settings.registration_open)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.registration_open ? 'bg-green-500' : 'bg-gray-300'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.registration_open ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            <div className="p-4 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-gray-900">Voting Open</div>
+                <div className="text-xs text-gray-500 mt-0.5">Allow the public to cast votes.</div>
+              </div>
+              <button onClick={() => toggleSetting('voting_open', settings.voting_open)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.voting_open ? 'bg-green-500' : 'bg-gray-300'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.voting_open ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -91,20 +99,15 @@ export default function AdminSettings() {
             <h2 className="text-sm font-bold text-gray-900">Security & Anti-Fraud</h2>
           </div>
           <div className="divide-y divide-gray-100">
-            {securitySettings.map((s) => (
-              <div key={s.key} className="p-4 flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold text-gray-900 capitalize">{s.key.replace(/_/g, ' ')}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{s.description}</div>
-                </div>
-                <button
-                  onClick={() => toggleSetting(s.key, s.value)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${s.value ? 'bg-green-500' : 'bg-gray-300'}`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${s.value ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
+            <div className="p-4 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-gray-900">IP Tracking</div>
+                <div className="text-xs text-gray-500 mt-0.5">Flag high-volume voting IPs for review.</div>
               </div>
-            ))}
+              <button onClick={() => toggleSetting('ip_tracking', settings.ip_tracking)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.ip_tracking ? 'bg-green-500' : 'bg-gray-300'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.ip_tracking ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -115,20 +118,15 @@ export default function AdminSettings() {
             <h2 className="text-sm font-bold text-gray-900">System</h2>
           </div>
           <div className="divide-y divide-gray-100">
-            {systemSettings.map((s) => (
-              <div key={s.key} className="p-4 flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold text-gray-900 capitalize">{s.key.replace(/_/g, ' ')}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{s.description}</div>
-                </div>
-                <button
-                  onClick={() => toggleSetting(s.key, s.value)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${s.value ? 'bg-red-500' : 'bg-gray-300'}`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${s.value ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
+            <div className="p-4 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-gray-900">Maintenance Mode</div>
+                <div className="text-xs text-gray-500 mt-0.5">Put the entire site into maintenance mode.</div>
               </div>
-            ))}
+              <button onClick={() => toggleSetting('maintenance_mode', settings.maintenance_mode)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.maintenance_mode ? 'bg-red-500' : 'bg-gray-300'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.maintenance_mode ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -143,14 +141,11 @@ export default function AdminSettings() {
               <div className="text-sm font-bold text-red-900">Reset Leaderboard</div>
               <div className="text-xs text-red-600 mt-0.5">Wipe all votes back to zero. This cannot be undone.</div>
             </div>
-            <button onClick={resetLeaderboard} className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-red-700 transition">
-              Reset Votes
-            </button>
+            <button onClick={resetLeaderboard} className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-red-700 transition">Reset Votes</button>
           </div>
         </div>
       </div>
 
-      {/* RENDER THE MODAL */}
       {modal.show && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">

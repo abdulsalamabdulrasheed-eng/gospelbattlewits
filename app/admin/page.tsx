@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { TrendingUp, Users, CheckCircle2, Clock, Activity } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, Cell, Legend
+  BarChart, Bar, Cell 
 } from 'recharts';
 
 const COLORS = ['#000000', '#333333', '#666666', '#999999', '#CCCCCC'];
@@ -36,7 +36,6 @@ export default function AdminDashboard() {
 
       setStats({ revenue, votes, total: contestants.length, pending, voters: uniqueVoters });
 
-      // Revenue Trend (Last 7 Days)
       const groupedTx = tx.reduce((acc: any, curr: any) => {
         const date = new Date(curr.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
         if (!acc[date]) acc[date] = { date, revenue: 0 };
@@ -45,7 +44,6 @@ export default function AdminDashboard() {
       }, {});
       setRevenueData(Object.values(groupedTx).slice(-7));
 
-      // Vote Share (Top 5)
       const topContestants = [...contestants]
         .filter(c => c.status === 'approved')
         .sort((a, b) => b.total_votes - a.total_votes)
@@ -72,8 +70,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* KPI Cards - Fixed Responsiveness */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
+      {/* KPI Cards - 2x2 Grid on Mobile */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Revenue</div>
@@ -95,13 +93,6 @@ export default function AdminDashboard() {
           </div>
           <div className="text-xl md:text-2xl font-black text-gray-900 truncate">{stats.voters}</div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Contestants</div>
-            <Users size={14} className="text-gray-600" />
-          </div>
-          <div className="text-xl md:text-2xl font-black text-gray-900 truncate">{stats.total} <span className="text-xs text-gray-400">/ 2000</span></div>
-        </div>
         <div className="bg-orange-50 p-4 rounded-xl border border-orange-200 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Pending</div>
@@ -113,8 +104,6 @@ export default function AdminDashboard() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        
-        {/* Revenue Chart */}
         <div className="bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm col-span-2">
           <h2 className="text-sm font-bold text-gray-900 mb-4">Revenue Trend (Last 7 Days)</h2>
           <div className="h-64">
@@ -134,7 +123,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Vote Share Bar Chart (Replaces broken Pie) */}
         <div className="bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm">
           <h2 className="text-sm font-bold text-gray-900 mb-4">Top 5 Vote Share</h2>
           <div className="h-64">
