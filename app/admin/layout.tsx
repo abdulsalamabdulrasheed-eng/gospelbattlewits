@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Users, CreditCard, ShieldCheck, 
@@ -15,7 +15,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const isLoggingOut = useRef(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -25,29 +24,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // SECURITY: Force logout when Admin leaves the admin panel
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // This fires when the tab is closed or refreshed.
-      // We cannot await async here, but we can clear local storage manually.
-      localStorage.removeItem('supabase.auth.token');
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      // When navigating away from /admin (component unmounts), force sign out
-      if (!isLoggingOut.current && !window.location.pathname.startsWith('/admin')) {
-        supabase.auth.signOut();
-      }
-    };
-  }, []);
-
   const handleLogout = async () => {
-    isLoggingOut.current = true;
     await supabase.auth.signOut();
     window.location.href = '/login';
+  };
+
+  const handleBackToSite = async () => {
+    // Sign out the admin before going to the public site
+    await supabase.auth.signOut();
+    window.location.href = '/';
   };
 
   const navGroups = [
@@ -81,7 +66,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-[#F7F7F9] flex flex-col md:flex-row">
-      {/* Mobile Top Bar */}
       <div className="md:hidden bg-[#0A0A0A] text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
         <div className="flex items-center gap-2">
           <div className="bg-white text-black p-1 rounded font-black text-xs">GB</div>
@@ -92,7 +76,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
       </div>
 
-      {/* Sidebar */}
       <AnimatePresence>
         {(isSidebarOpen || (typeof window !== 'undefined' && window.innerWidth >= 768)) && (
           <motion.div
@@ -146,18 +129,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </nav>
 
             <div className="p-2 border-t border-gray-800 pb-20 md:pb-2 space-y-1">
-              <Link
-                href="/"
-                className="flex items-center gap-3 px-2.5 py-2.5 text-xs font-bold text-blue-400 hover:bg-gray-800 rounded-lg transition"
-              >
+              <button onClick={handleBackToSite} className="w-full flex items-center gap-3 px-2.5 py-2.5 text-xs font-bold text-blue-400 hover:bg-gray-800 rounded-lg transition">
                 <ExternalLink size={16} className="shrink-0" />
-                {!isCollapsed && <span>Back to Site</span>}
-              </Link>
+                {!isCollapsed && <span>Back to Site (Logout)</span>}
+              </button>
               
-              <button 
-                onClick={handleLogout} 
-                className="w-full flex items-center gap-3 px-2.5 py-2.5 text-xs font-bold text-red-400 hover:bg-gray-800 rounded-lg transition"
-              >
+              <button onClick={handleLogout} className="w-full flex items-center gap-3 px-2.5 py-2.5 text-xs font-bold text-red-400 hover:bg-gray-800 rounded-lg transition">
                 <LogOut size={16} className="shrink-0" />
                 {!isCollapsed && <span>Logout</span>}
               </button>
@@ -166,7 +143,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )}
       </AnimatePresence>
 
-      {/* Overlay for mobile */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div 
@@ -177,7 +153,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
       <div className="flex-1 overflow-y-auto h-screen w-full">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="h-full">
           {children}

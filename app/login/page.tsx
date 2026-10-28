@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -16,12 +16,33 @@ export default function GeneralLogin() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Force sign-out on page load to prevent session hijacking
+  useEffect(() => {
+    const clearSession = async () => {
+      // Check if the current session is an Admin or Contestant
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // If they are an Admin, we don't want to auto-sign them out if they're navigating back to admin
+        // But if they land on /login, we should treat it as a fresh login attempt
+        const { data: adminData } = await supabase.from('admins').select('id').eq('id', session.user.id).maybeSingle();
+        if (!adminData) {
+          // If they aren't an admin, sign out the old session
+          await supabase.auth.signOut();
+        }
+      }
+    };
+    clearSession();
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // 1. Authenticate
+    // 1. First, sign out any existing session
+    await supabase.auth.signOut();
+
+    // 2. Authenticate with Email/Password
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: password,
@@ -33,10 +54,11 @@ export default function GeneralLogin() {
       return;
     }
 
-    // 2. Check if Admin
+    // 3. Check if Admin
     const { data: adminData } = await supabase.from('admins').select('id').eq('id', authData.user.id).maybeSingle();
 
     if (adminData) {
+      // Check MFA
       const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (mfaData?.currentLevel === 'aal1' && mfaData?.nextLevel === 'aal2') {
         setShowMfa(true);
@@ -48,13 +70,14 @@ export default function GeneralLogin() {
       }
     }
 
-    // 3. Check if Contestant
+    // 4. Check if Contestant
     const { data: contestantData } = await supabase.from('contestants').select('id').eq('email', email.trim()).maybeSingle();
     if (contestantData) {
       router.push('/contestant/dashboard');
       return;
     }
 
+    // No profile found
     await supabase.auth.signOut();
     setError('Account authenticated, but no profile found. Please register.');
     setLoading(false);
@@ -123,7 +146,13 @@ export default function GeneralLogin() {
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">Password</label>
               <div className="relative">
-                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-2.5 pr-10 border rounded-lg outline-none focus:border-black text-sm" required />
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  className="w-full p-2.5 pr-10 border rounded-lg outline-none focus:border-black text-sm" 
+                  required 
+                />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
