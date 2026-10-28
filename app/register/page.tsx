@@ -127,30 +127,30 @@ function RegisterForm() {
         ref: `REG-${Date.now()}`,
         metadata: { type: 'registration' },
         callback: function (response: any) {
-          // Make sure formData is sent as a top-level object
           fetch('/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              formData: {
-                full_name: formData.full_name,
-                stage_name: formData.stage_name,
-                email: formData.email,
-                phone: formData.phone,
-                church: formData.church,
-                category: formData.category,
-                bio: formData.bio,
-              },
+              formData,
               photoUrl: photoData.publicUrl,
               videoUrl: videoData.publicUrl,
               reference: response.reference,
             }),
           })
           .then(res => res.json())
-          .then(data => {
+          .then(async (data) => {
             if (data.error) throw new Error(data.error);
-            supabase.auth.signInWithPassword({ email: formData.email, password: data.tempPassword })
-              .then(() => router.push('/contestant/set-password'));
+            
+            // Auto-login and hard redirect to avoid the login page
+            const { error: loginError } = await supabase.auth.signInWithPassword({ 
+              email: formData.email.trim(), 
+              password: data.tempPassword 
+            });
+            
+            if (loginError) throw new Error("Auto-login failed: " + loginError.message);
+
+            // Force redirect to set password
+            window.location.href = '/contestant/set-password';
           })
           .catch(err => {
             showModal('Error', 'Payment succeeded but save failed: ' + err.message, true);
