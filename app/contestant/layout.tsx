@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, Megaphone, BarChart3, Settings, LogOut, BookOpen, ExternalLink, Home } from 'lucide-react';
-import Link2 from 'next/link';
+import { LayoutDashboard, Megaphone, BarChart3, Settings, LogOut, BookOpen, ExternalLink, Home, Users } from 'lucide-react';
 
 export default function ContestantLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,52 +13,27 @@ export default function ContestantLayout({ children }: { children: React.ReactNo
 
   useEffect(() => {
     const checkPassword = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      // Check if they have a password identity (not just the temp one)
-      // If the user was created via admin.createUser with a temp password, they might not have a confirmed email
-      // A simple check: if they are on the set-password page, don't block
       if (pathname === '/contestant/set-password') {
         setIsPasswordSet(true);
         return;
       }
-
-      // If the user just signed up, their email might be auto-confirmed but we can check if they've been prompted
-      // For simplicity, we'll assume if they have the "has_set_password" flag in local storage
-      // Or we can check if they are authenticated and have a session
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // We'll consider it set if they are on any page other than set-password
-        // and they have a valid session
-        setIsPasswordSet(true);
-      } else {
-        setIsPasswordSet(false);
-      }
+      setIsPasswordSet(!!session);
     };
     checkPassword();
-  }, [pathname, router]);
+  }, [pathname]);
 
-  // If we are still checking, show a loading state
-  if (isPasswordSet === null) {
-    return <div className="min-h-screen flex items-center justify-center font-bold">Verifying session...</div>;
-  }
+  if (isPasswordSet === null) return <div className="min-h-screen flex items-center justify-center font-bold">Verifying session...</div>;
 
-  // If password not set and not on the set-password page, redirect
   if (!isPasswordSet && pathname !== '/contestant/set-password') {
-    // We need to redirect to set-password, but we can do it via a Link
-    // However, the router push may happen after render
-    // Let's just render a prompt
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
           <h1 className="text-2xl font-black mb-2">Action Required</h1>
           <p className="text-gray-500 mb-6">You need to set a password before accessing your dashboard.</p>
-          <Link2 href="/contestant/set-password" className="block w-full bg-black text-white font-bold py-3 rounded-lg">
+          <Link href="/contestant/set-password" className="block w-full bg-black text-white font-bold py-3 rounded-lg">
             Set Password Now
-          </Link2>
+          </Link>
         </div>
       </div>
     );
@@ -78,15 +52,13 @@ export default function ContestantLayout({ children }: { children: React.ReactNo
   const navItems = [
     { name: 'Overview', path: '/contestant/dashboard', icon: LayoutDashboard },
     { name: 'Campaign', path: '/contestant/campaign', icon: Megaphone },
+    { name: 'Supporters', path: '/contestant/supporters', icon: Users },
     { name: 'Analytics', path: '/contestant/analytics', icon: BarChart3 },
     { name: 'Rules', path: '/contestant/rules', icon: BookOpen },
     { name: 'Settings', path: '/contestant/settings', icon: Settings },
   ];
 
-  // If on the set-password page, we just render children without the sidebar
-  if (pathname === '/contestant/set-password') {
-    return <>{children}</>;
-  }
+  if (pathname === '/contestant/set-password') return <>{children}</>;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row pb-16 md:pb-0">

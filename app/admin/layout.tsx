@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Users, CreditCard, ShieldCheck, 
-  Settings, LogOut, Menu, X, FileText, ChevronLeft, ChevronRight, BookOpen, ExternalLink
+  Settings, LogOut, Menu, X, FileText, ChevronLeft, ChevronRight, BookOpen, ExternalLink, UserCheck
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +30,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const handleBackToSite = async () => {
-    // Sign out the admin before going to the public site
     await supabase.auth.signOut();
     window.location.href = '/';
   };
@@ -44,6 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       title: 'Voting Operations',
       items: [
         { name: 'Contestants', path: '/admin/contestants', icon: Users },
+        { name: 'Voters', path: '/admin/voters', icon: UserCheck },
         { name: 'Transactions', path: '/admin/transactions', icon: CreditCard },
       ]
     },
@@ -108,7 +108,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   )}
                   <div className="space-y-1">
                     {group.items.map((item) => {
-                      const isActive = pathname === item.path;
+                      const isActive = pathname === item.path || (item.path !== '/admin' && pathname.startsWith(item.path));
                       return (
                         <Link
                           key={item.path}
