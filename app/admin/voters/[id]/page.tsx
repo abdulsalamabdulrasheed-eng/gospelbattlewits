@@ -16,12 +16,7 @@ export default function ContestantVoters() {
   useEffect(() => {
     const fetchData = async () => {
       const { data: c, error: cError } = await supabase.from('contestants').select('*').eq('contestant_id', id).single();
-      
-      if (cError || !c) {
-        setLoading(false);
-        return;
-      }
-      
+      if (cError || !c) { setLoading(false); return; }
       setContestant(c);
       
       const { data: tx, error: txError } = await supabase
@@ -52,38 +47,6 @@ export default function ContestantVoters() {
     link.href = url;
     link.download = `Voters_${id}.csv`;
     link.click();
-  };
-
-  const printReceipt = (tx: any) => {
-    const win = window.open('', '_blank');
-    if (win) {
-      win.document.write(`
-        <html>
-          <head><title>Receipt - ${tx.reference}</title></head>
-          <body style="font-family: sans-serif; padding: 40px; max-width: 500px; margin: 0 auto;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="margin: 0; font-size: 24px;">TFTC Live Show</h1>
-              <p style="color: #666; margin: 5px 0;">Official Payment Receipt</p>
-            </div>
-            <div style="border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 20px 0; margin-bottom: 20px;">
-              <p><strong>Reference:</strong> ${tx.reference}</p>
-              <p><strong>Date:</strong> ${new Date(tx.created_at).toLocaleString()}</p>
-              <p><strong>Voter Email:</strong> ${tx.voter_email}</p>
-              <p><strong>Contestant:</strong> ${contestant.stage_name || contestant.full_name} (${contestant.contestant_id})</p>
-            </div>
-            <div style="text-align: right; font-size: 18px; font-weight: bold;">
-              <p>Amount: ₦${(tx.amount / 100).toLocaleString()}</p>
-              <p>Votes Credited: ${tx.votes_credited}</p>
-            </div>
-            <div style="text-align: center; margin-top: 40px; color: #666; font-size: 12px;">
-              <p>Thank you for supporting TFTC Live Show 2027.</p>
-            </div>
-          </body>
-        </html>
-      `);
-      win.document.close();
-      win.print();
-    }
   };
 
   if (loading) return <div className="p-10 font-bold text-center">Loading...</div>;
@@ -146,7 +109,9 @@ export default function ContestantVoters() {
                   <td className="p-4 text-right font-black text-green-600">₦{(tx.amount / 100).toLocaleString()}</td>
                   <td className="p-4 text-gray-500 text-xs">{new Date(tx.created_at).toLocaleString()}</td>
                   <td className="p-4 text-right">
-                    <button onClick={() => printReceipt(tx)} className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 justify-end ml-auto"><Receipt size={14}/> Receipt</button>
+                    <Link href={`/admin/voters/${id}/receipt/${tx.id}`} className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 justify-end ml-auto">
+                      <Receipt size={14}/> Receipt
+                    </Link>
                   </td>
                 </tr>
               ))}

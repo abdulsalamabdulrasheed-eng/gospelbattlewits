@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
-import { Search, Download, TrendingUp, Filter } from 'lucide-react';
+import { Search, Download, TrendingUp, Filter, Wallet, CreditCard } from 'lucide-react';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('all'); // all, registrations, votes
-  const [sortBy, setSortBy] = useState('newest'); // newest, highest
+  const [activeTab, setActiveTab] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
     fetchTransactions();
@@ -19,14 +19,12 @@ export default function Transactions() {
   useEffect(() => {
     let result = transactions;
 
-    // 1. Filter by Tab
     if (activeTab === 'registrations') {
       result = result.filter(tx => tx.votes_credited === 0);
     } else if (activeTab === 'votes') {
       result = result.filter(tx => tx.votes_credited > 0);
     }
 
-    // 2. Filter by Search
     if (search.trim() !== '') {
       const lower = search.toLowerCase();
       result = result.filter(tx => 
@@ -35,7 +33,6 @@ export default function Transactions() {
       );
     }
 
-    // 3. Sort
     if (sortBy === 'newest') {
       result = [...result].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     } else if (sortBy === 'highest') {
@@ -54,8 +51,10 @@ export default function Transactions() {
     setLoading(false);
   };
 
-  const totalRevenue = filtered.reduce((sum, t) => sum + (t.amount || 0), 0) / 100;
-  const totalVotes = filtered.reduce((sum, t) => sum + (t.votes_credited || 0), 0);
+  const totalRevenue = transactions.reduce((sum, t) => sum + (t.amount || 0), 0) / 100;
+  const votingRevenue = transactions.filter(t => t.votes_credited > 0).reduce((sum, t) => sum + (t.amount || 0), 0) / 100;
+  const registrationRevenue = transactions.filter(t => t.votes_credited === 0).reduce((sum, t) => sum + (t.amount || 0), 0) / 100;
+  const totalVotes = transactions.reduce((sum, t) => sum + (t.votes_credited || 0), 0);
 
   const exportToCSV = () => {
     const headers = ['Reference', 'Voter Email', 'Votes Credited', 'Amount (NGN)', 'Date'];
@@ -80,28 +79,37 @@ export default function Transactions() {
       <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-gray-900">Transaction Ledger</h1>
-          <p className="text-sm text-gray-500 mt-1">Real-time financial audit of all successful votes.</p>
+          <p className="text-sm text-gray-500 mt-1">Real-time financial audit of all successful payments.</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={exportToCSV} className="bg-white border border-gray-300 text-black px-4 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-50 flex items-center gap-2 shadow-sm">
-            <Download size={16} /> Export CSV
-          </button>
-        </div>
+        <button onClick={exportToCSV} className="bg-white border border-gray-300 text-black px-4 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-50 flex items-center gap-2 shadow-sm">
+          <Download size={16} /> Export CSV
+        </button>
       </div>
 
-      {/* Financial Summary Cards */}
+      {/* 3-by-1 Revenue Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Gross Revenue</div>
-          <div className="text-3xl font-black text-green-600">₦{totalRevenue.toLocaleString()}</div>
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Gross Revenue</div>
+            <TrendingUp size={16} className="text-green-600" />
+          </div>
+          <div className="text-2xl md:text-3xl font-black text-green-600 truncate">₦{totalRevenue.toLocaleString()}</div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Votes Generated</div>
-          <div className="text-3xl font-black text-gray-900">{totalVotes.toLocaleString()}</div>
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Voting Revenue</div>
+            <Wallet size={16} className="text-blue-600" />
+          </div>
+          <div className="text-2xl md:text-3xl font-black text-blue-600 truncate">₦{votingRevenue.toLocaleString()}</div>
+          <div className="text-[10px] text-gray-400 font-bold mt-1">{totalVotes.toLocaleString()} votes generated</div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Transactions</div>
-          <div className="text-3xl font-black text-gray-900">{filtered.length}</div>
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Registration Revenue</div>
+            <CreditCard size={16} className="text-purple-600" />
+          </div>
+          <div className="text-2xl md:text-3xl font-black text-purple-600 truncate">₦{registrationRevenue.toLocaleString()}</div>
+          <div className="text-[10px] text-gray-400 font-bold mt-1">{transactions.filter(t => t.votes_credited === 0).length} registrations</div>
         </div>
       </div>
 
@@ -168,9 +176,9 @@ export default function Transactions() {
                 <td className="p-4 font-semibold text-gray-900">{tx.voter_email}</td>
                 <td className="p-4">
                   {tx.votes_credited > 0 ? (
-                    <span className="bg-green-50 text-green-700 px-2 py-1 rounded-md text-xs font-bold border border-green-100">+{tx.votes_credited} Votes</span>
+                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-100">+{tx.votes_credited} Votes</span>
                   ) : (
-                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-100">Registration</span>
+                    <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-bold border border-purple-100">Registration</span>
                   )}
                 </td>
                 <td className="p-4 text-right font-black text-green-600">₦{(tx.amount / 100).toLocaleString()}</td>
