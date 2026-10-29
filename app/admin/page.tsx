@@ -14,6 +14,7 @@ const COLORS = ['#000000', '#333333', '#666666', '#999999', '#CCCCCC'];
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ revenue: 0, votes: 0, total: 0, pending: 0, voters: 0 });
   const [recentTx, setRecentTx] = useState<any[]>([]);
+  const [recentPending, setRecentPending] = useState<any[]>([]);
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const [voteShareData, setVoteShareData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,9 @@ export default function AdminDashboard() {
       const uniqueVoters = new Set(tx.map(t => t.voter_email)).size;
 
       setStats({ revenue, votes, total: contestants.length, pending, voters: uniqueVoters });
+
+      // Recent Pending
+      setRecentPending(contestants.filter(c => c.status === 'pending').slice(0, 5));
 
       const groupedTx = tx.reduce((acc: any, curr: any) => {
         const date = new Date(curr.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -70,7 +74,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* KPI Cards - 2x2 Grid on Mobile */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-2">
@@ -102,7 +105,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm col-span-2">
           <h2 className="text-sm font-bold text-gray-900 mb-4">Revenue Trend (Last 7 Days)</h2>
@@ -147,7 +149,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Live Feed & Pending Queue */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -176,11 +177,22 @@ export default function AdminDashboard() {
             <h2 className="text-sm font-bold text-gray-900">Pending Applicants</h2>
             <Link href="/admin/contestants" className="text-xs font-bold text-gray-500 hover:text-black underline">View All</Link>
           </div>
-          <div className="p-6 text-center text-xs text-gray-500 h-64 flex flex-col items-center justify-center">
-            {stats.pending === 0 ? (
-              <span>You're all caught up!</span>
+          <div className="divide-y divide-gray-100 h-64 overflow-y-auto">
+            {recentPending.length === 0 ? (
+              <div className="p-6 text-center text-xs text-gray-500">You're all caught up!</div>
             ) : (
-              <Link href="/admin/contestants" className="bg-black text-white px-4 py-2 rounded-lg font-bold">Review {stats.pending} Pending</Link>
+              recentPending.map(c => (
+                <div key={c.id} className="p-3 flex justify-between items-center hover:bg-gray-50">
+                  <div className="flex items-center gap-3">
+                    <img src={c.photo_url} alt="" className="w-8 h-8 rounded-full object-cover border" />
+                    <div>
+                      <div className="text-xs font-bold text-gray-900">{c.stage_name || c.full_name}</div>
+                      <div className="text-[10px] text-gray-500">{c.contestant_id}</div>
+                    </div>
+                  </div>
+                  <Link href="/admin/contestants" className="bg-black text-white px-3 py-1 rounded-md text-[10px] font-bold">Review</Link>
+                </div>
+              ))
             )}
           </div>
         </div>

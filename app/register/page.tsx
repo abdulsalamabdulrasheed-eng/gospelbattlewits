@@ -27,7 +27,11 @@ function RegisterForm() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [agreed, setAgreed] = useState(false);
+  
+  // Three Checkboxes
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeMedia, setAgreeMedia] = useState(false);
+  const [agreeNewsletter, setAgreeNewsletter] = useState(false);
 
   useEffect(() => {
     checkRegistrationStatus();
@@ -98,7 +102,7 @@ function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isClosed) return showModal('Registration Closed', 'The registration portal is currently closed.', true);
-    if (!agreed) return showModal('Agreement Required', 'You must agree to the Content & Media Agreement.', true);
+    if (!agreeTerms || !agreeMedia) return showModal('Agreement Required', 'You must agree to the Terms and Media Agreement.', true);
 
     setLoading(true);
     try {
@@ -125,13 +129,13 @@ function RegisterForm() {
         amount: 2000 * 100,
         currency: 'NGN',
         ref: `REG-${Date.now()}`,
-        metadata: { type: 'registration' },
+        metadata: { type: 'registration', newsletter_optin: agreeNewsletter },
         callback: function (response: any) {
           fetch('/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              formData,
+              formData: { ...formData, newsletter_optin: agreeNewsletter },
               photoUrl: photoData.publicUrl,
               videoUrl: videoData.publicUrl,
               reference: response.reference,
@@ -140,16 +144,11 @@ function RegisterForm() {
           .then(res => res.json())
           .then(async (data) => {
             if (data.error) throw new Error(data.error);
-            
-            // Auto-login and hard redirect to avoid the login page
             const { error: loginError } = await supabase.auth.signInWithPassword({ 
               email: formData.email.trim(), 
               password: data.tempPassword 
             });
-            
             if (loginError) throw new Error("Auto-login failed: " + loginError.message);
-
-            // Force redirect to set password
             window.location.href = '/contestant/set-password';
           })
           .catch(err => {
@@ -287,12 +286,23 @@ function RegisterForm() {
                   <p className="text-sm font-bold text-green-800">Registration Fee</p>
                   <p className="text-3xl font-black text-green-700">₦2,000</p>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-lg border">
+                
+                {/* Three Checkboxes */}
+                <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
                   <label className="flex items-start gap-3 cursor-pointer">
-                    <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1 w-5 h-5 accent-black" />
-                    <span className="text-sm text-gray-600">I agree to the TFTC Content & Media Agreement. I understand the ₦2,000 fee is non-refundable.</span>
+                    <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-black" />
+                    <span className="text-sm text-gray-600">I agree to the <Link href="/terms" target="_blank" className="underline font-bold">Terms & Conditions</Link>.</span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" checked={agreeMedia} onChange={(e) => setAgreeMedia(e.target.checked)} className="mt-1 w-5 h-5 accent-black" />
+                    <span className="text-sm text-gray-600">I agree to the <Link href="/media-agreement" target="_blank" className="underline font-bold">TMTC Content & Media Agreement</Link>.</span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <input type="checkbox" checked={agreeNewsletter} onChange={(e) => setAgreeNewsletter(e.target.checked)} className="mt-1 w-5 h-5 accent-black" />
+                    <span className="text-sm text-blue-800">I want to receive marketing and newsletter updates (vote reminders, show news).</span>
                   </label>
                 </div>
+
                 <div className="flex gap-4 mt-6">
                   <button type="button" onClick={prevStep} className="flex-1 bg-gray-200 text-black font-bold py-4 rounded-xl">Back</button>
                   <button type="submit" disabled={loading} className="flex-[2] bg-black text-white font-bold py-4 rounded-xl flex justify-center items-center gap-2">
