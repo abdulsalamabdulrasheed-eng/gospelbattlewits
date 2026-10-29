@@ -77,7 +77,7 @@ export default function ContestantVoters() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filtered.map(tx => (
-                <tr key={tx.id} onClick={() => router.push(`/admin/voters/${id}/receipt/${tx.id}`)} className="hover:bg-blue-50/50 cursor-pointer transition-colors group">
+                <tr key={tx.id} onClick={() => router.push(`/admin/receipts/${tx.id}`)} className="hover:bg-blue-50/50 cursor-pointer transition-colors group">
                   <td className="p-4 font-semibold">{tx.voter_email}</td>
                   <td className="p-4"><span className="bg-black text-white px-2 py-1 rounded text-xs font-bold">+{tx.votes_credited}</span></td>
                   <td className="p-4 text-right font-black text-green-600">₦{(tx.amount / 100).toLocaleString()}</td>

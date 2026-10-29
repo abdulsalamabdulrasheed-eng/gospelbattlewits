@@ -132,29 +132,28 @@ export default function Transactions() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filtered.map((tx) => {
-              const receiptUrl = tx.contestants?.contestant_id ? `/admin/voters/${tx.contestants.contestant_id}/receipt/${tx.id}` : null;
-              return (
-                <tr key={tx.id} onClick={() => receiptUrl && router.push(receiptUrl)} className={`hover:bg-blue-50/50 transition-colors ${receiptUrl ? 'cursor-pointer group' : ''}`}>
-                  <td className="p-4 font-mono text-xs text-gray-500">{tx.reference}</td>
-                  <td className="p-4 font-semibold text-gray-900">{tx.voter_email}</td>
-                  <td className="p-4">
-                    {tx.votes_credited > 0 ? (
-                      <span className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded-md text-xs font-bold border border-yellow-100">+{tx.votes_credited} Votes</span>
-                    ) : (
-                      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-bold border border-gray-200">Registration</span>
-                    )}
-                  </td>
-                  <td className="p-4 text-right font-black text-green-600">₦{(tx.amount / 100).toLocaleString()}</td>
-                  <td className="p-4 text-gray-500 text-xs">{new Date(tx.created_at).toLocaleString()}</td>
-                  <td className="p-4 text-right">
-                    {receiptUrl ? (
-                      <span className="text-xs font-bold text-blue-600 group-hover:underline flex items-center gap-1 justify-end ml-auto"><Receipt size={14}/> View</span>
-                    ) : <span className="text-xs text-gray-400">N/A</span>}
-                  </td>
-                </tr>
-              );
-            })}
+            {filtered.map((tx) => (
+              <tr 
+                key={tx.id} 
+                onClick={() => router.push(`/admin/receipts/${tx.id}`)} 
+                className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+              >
+                <td className="p-4 font-mono text-xs text-gray-500">{tx.reference}</td>
+                <td className="p-4 font-semibold text-gray-900">{tx.voter_email}</td>
+                <td className="p-4">
+                  {tx.votes_credited > 0 ? (
+                    <span className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded-md text-xs font-bold border border-yellow-100">+{tx.votes_credited} Votes</span>
+                  ) : (
+                    <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-bold border border-gray-200">Registration</span>
+                  )}
+                </td>
+                <td className="p-4 text-right font-black text-green-600">₦{(tx.amount / 100).toLocaleString()}</td>
+                <td className="p-4 text-gray-500 text-xs">{new Date(tx.created_at).toLocaleString()}</td>
+                <td className="p-4 text-right">
+                  <span className="text-xs font-bold text-blue-600 group-hover:underline flex items-center gap-1 justify-end ml-auto"><Receipt size={14}/> View</span>
+                </td>
+              </tr>
+            ))}
             {filtered.length === 0 && <tr><td colSpan={6} className="p-10 text-center text-gray-500">No transactions found.</td></tr>}
           </tbody>
         </table>
