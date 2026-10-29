@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, Megaphone, BarChart3, Settings, LogOut, BookOpen, ExternalLink, Home, Users } from 'lucide-react';
+import { LayoutDashboard, Megaphone, BarChart3, Settings, LogOut, BookOpen, ExternalLink, Home, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function ContestantLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isPasswordSet, setIsPasswordSet] = useState<boolean | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     const checkPassword = async () => {
@@ -69,10 +70,12 @@ export default function ContestantLayout({ children }: { children: React.ReactNo
         </button>
       </div>
 
-      <div className="hidden md:flex w-56 bg-black text-white flex-col sticky top-0 h-screen border-r border-gray-800">
-        <div className="p-4 border-b border-gray-800">
-          <h1 className="text-base font-black tracking-wider uppercase">Campaign</h1>
-          <p className="text-[9px] text-gray-400 mt-1 uppercase tracking-widest">TFTC 2027</p>
+      <div className={`hidden md:flex ${isCollapsed ? 'w-16' : 'w-56'} bg-black text-white flex-col sticky top-0 h-screen border-r border-gray-800 transition-all duration-300`}>
+        <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+          {!isCollapsed && <div><h1 className="text-base font-black tracking-wider uppercase">Campaign</h1><p className="text-[9px] text-gray-400 mt-1 uppercase tracking-widest">TFTC 2027</p></div>}
+          <button onClick={() => setIsCollapsed(!isCollapsed)} className="text-gray-500 hover:text-white p-1 mx-auto">
+            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
         </div>
         
         <nav className="flex-1 p-3 space-y-1">
@@ -85,9 +88,10 @@ export default function ContestantLayout({ children }: { children: React.ReactNo
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-bold text-xs transition-all ${
                   isActive ? 'bg-white text-black' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                 }`}
+                title={isCollapsed ? item.name : ''}
               >
                 <item.icon size={16} className={isActive ? 'text-black' : 'text-gray-500'} />
-                {item.name}
+                {!isCollapsed && item.name}
               </Link>
             );
           })}
@@ -95,10 +99,10 @@ export default function ContestantLayout({ children }: { children: React.ReactNo
         
         <div className="p-3 border-t border-gray-800 space-y-1">
           <button onClick={handleBackToSite} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-blue-400 hover:bg-gray-800 rounded-lg transition">
-            <ExternalLink size={16} /> Back to Site (Logout)
+            <ExternalLink size={16} /> {!isCollapsed && "Back to Site (Logout)"}
           </button>
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-gray-800 rounded-lg transition">
-            <LogOut size={16} /> Logout
+            <LogOut size={16} /> {!isCollapsed && "Logout"}
           </button>
         </div>
       </div>

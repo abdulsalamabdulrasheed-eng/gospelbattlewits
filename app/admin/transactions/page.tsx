@@ -9,15 +9,24 @@ export default function Transactions() {
   const [filtered, setFiltered] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [groupBy, setGroupBy] = useState<'none' | 'date' | 'amount'>('none');
+  const [activeTab, setActiveTab] = useState('all'); // all, registrations, votes
+  const [sortBy, setSortBy] = useState('newest'); // newest, highest
 
   useEffect(() => {
     fetchTransactions();
   }, []);
 
   useEffect(() => {
-    // Apply Search
     let result = transactions;
+
+    // 1. Filter by Tab
+    if (activeTab === 'registrations') {
+      result = result.filter(tx => tx.votes_credited === 0);
+    } else if (activeTab === 'votes') {
+      result = result.filter(tx => tx.votes_credited > 0);
+    }
+
+    // 2. Filter by Search
     if (search.trim() !== '') {
       const lower = search.toLowerCase();
       result = result.filter(tx => 
@@ -26,15 +35,15 @@ export default function Transactions() {
       );
     }
 
-    // Apply Grouping
-    if (groupBy === 'date') {
+    // 3. Sort
+    if (sortBy === 'newest') {
       result = [...result].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else if (groupBy === 'amount') {
+    } else if (sortBy === 'highest') {
       result = [...result].sort((a, b) => b.amount - a.amount);
     }
 
     setFiltered(result);
-  }, [search, transactions, groupBy]);
+  }, [search, transactions, activeTab, sortBy]);
 
   const fetchTransactions = async () => {
     const { data } = await supabase.from('transactions').select('*').eq('status', 'success').order('created_at', { ascending: false });
@@ -96,6 +105,25 @@ export default function Transactions() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+        {[
+          { id: 'all', label: 'All Transactions' },
+          { id: 'registrations', label: 'Registrations' },
+          { id: 'votes', label: 'Votes' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+              activeTab === tab.id ? 'bg-black text-white' : 'bg-white text-gray-600 border hover:bg-gray-50'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Controls */}
       <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm mb-4 flex flex-col md:flex-row gap-3 justify-between items-center">
         <div className="relative w-full md:w-96">
@@ -111,13 +139,12 @@ export default function Transactions() {
         <div className="flex items-center gap-2">
           <Filter size={14} className="text-gray-500" />
           <select 
-            value={groupBy} 
-            onChange={(e) => setGroupBy(e.target.value as any)}
+            value={sortBy} 
+            onChange={(e) => setSortBy(e.target.value)}
             className="text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-black bg-white"
           >
-            <option value="none">Default Sort (Newest)</option>
-            <option value="amount">Sort by Amount (Highest)</option>
-            <option value="date">Sort by Date</option>
+            <option value="newest">Newest First</option>
+            <option value="highest">Highest Amount</option>
           </select>
         </div>
       </div>
@@ -129,7 +156,7 @@ export default function Transactions() {
             <tr>
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Reference</th>
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Voter Email</th>
-              <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Votes</th>
+              <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Type</th>
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider text-right">Amount (₦)</th>
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Date</th>
             </tr>
@@ -140,9 +167,11 @@ export default function Transactions() {
                 <td className="p-4 font-mono text-xs text-gray-500">{tx.reference}</td>
                 <td className="p-4 font-semibold text-gray-900">{tx.voter_email}</td>
                 <td className="p-4">
-                  <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-bold border">
-                    +{tx.votes_credited}
-                  </span>
+                  {tx.votes_credited > 0 ? (
+                    <span className="bg-green-50 text-green-700 px-2 py-1 rounded-md text-xs font-bold border border-green-100">+{tx.votes_credited} Votes</span>
+                  ) : (
+                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-100">Registration</span>
+                  )}
                 </td>
                 <td className="p-4 text-right font-black text-green-600">₦{(tx.amount / 100).toLocaleString()}</td>
                 <td className="p-4 text-gray-500 text-xs">{new Date(tx.created_at).toLocaleString()}</td>
