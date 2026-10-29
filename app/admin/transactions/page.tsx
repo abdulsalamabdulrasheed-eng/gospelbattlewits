@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
-import { Search, Download, TrendingUp, Filter, Wallet, CreditCard } from 'lucide-react';
+import { Search, Download, TrendingUp, Filter, Wallet, CreditCard, Receipt } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -43,7 +44,16 @@ export default function Transactions() {
   }, [search, transactions, activeTab, sortBy]);
 
   const fetchTransactions = async () => {
-    const { data } = await supabase.from('transactions').select('*').eq('status', 'success').order('created_at', { ascending: false });
+    // Fetch transactions and join with contestants to get the string ID
+    const { data } = await supabase
+      .from('transactions')
+      .select(`
+        *,
+        contestants ( contestant_id, full_name, stage_name )
+      `)
+      .eq('status', 'success')
+      .order('created_at', { ascending: false });
+    
     if (data) {
       setTransactions(data);
       setFiltered(data);
@@ -159,7 +169,7 @@ export default function Transactions() {
 
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden overflow-x-auto">
-        <table className="w-full text-left text-sm whitespace-nowrap min-w-[600px]">
+        <table className="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Reference</th>
@@ -167,6 +177,7 @@ export default function Transactions() {
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Type</th>
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider text-right">Amount (₦)</th>
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Date</th>
+              <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -183,10 +194,22 @@ export default function Transactions() {
                 </td>
                 <td className="p-4 text-right font-black text-green-600">₦{(tx.amount / 100).toLocaleString()}</td>
                 <td className="p-4 text-gray-500 text-xs">{new Date(tx.created_at).toLocaleString()}</td>
+                <td className="p-4 text-right">
+                  {tx.contestants?.contestant_id ? (
+                    <Link 
+                      href={`/admin/voters/${tx.contestants.contestant_id}/receipt/${tx.id}`} 
+                      className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 justify-end ml-auto"
+                    >
+                      <Receipt size={14}/> Receipt
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-gray-400">N/A</span>
+                  )}
+                </td>
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="p-10 text-center text-gray-500">No transactions found.</td></tr>
+              <tr><td colSpan={6} className="p-10 text-center text-gray-500">No transactions found.</td></tr>
             )}
           </tbody>
         </table>
