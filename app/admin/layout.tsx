@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Logo } from '@/components/Logo';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/utils/supabase';
 import { useState, useEffect } from 'react';
@@ -68,7 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-[#F7F7F9] flex flex-col md:flex-row">
       <div className="md:hidden bg-[#0A0A0A] text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
         <div className="flex items-center gap-2">
-          <div className="bg-white text-black p-1 rounded font-black text-xs">GB</div>
+          <Logo size={32} showText={false} />
           <h1 className="text-sm font-black tracking-wider uppercase">TFTC Admin</h1>
         </div>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition">

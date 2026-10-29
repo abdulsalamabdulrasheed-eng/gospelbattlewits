@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toPng } from 'html-to-image';
 import { Download, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
 export default function ReceiptPage() {
   const { id, txId } = useParams();
@@ -51,65 +52,64 @@ export default function ReceiptPage() {
         <Link href={`/admin/voters/${id}`} className="text-sm font-bold text-gray-600 hover:text-black flex items-center gap-1">
           <ArrowLeft size={16}/> Back
         </Link>
-        <button onClick={downloadReceipt} disabled={downloading} className="bg-black text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 disabled:opacity-50">
+        <button onClick={downloadReceipt} disabled={downloading} className="bg-black text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 disabled:opacity-50 shadow-lg">
           <Download size={16}/> {downloading ? 'Generating...' : 'Download'}
         </button>
       </div>
 
       {/* RECEIPT CARD */}
-      <div ref={receiptRef} className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div ref={receiptRef} className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden relative">
         
         {/* Header */}
         <div className="bg-[#0A0A0A] p-6 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_rgba(234,179,8,0.2),transparent_50%)]"></div>
-          <div className="relative z-10">
-            <div className="bg-yellow-500 text-black w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 font-black text-xl">GB</div>
+          <div className="relative z-10 flex flex-col items-center justify-center">
+            <div className="mb-3"><Logo size={48} showText={false} /></div>
             <h1 className="text-white font-black tracking-widest text-lg">TFTC LIVE SHOW</h1>
-            <p className="text-gray-400 text-xs uppercase tracking-widest mt-1">Official Payment Receipt</p>
+            <p className="text-gray-400 text-[10px] uppercase tracking-[0.2em] mt-1">Official Payment Receipt</p>
           </div>
         </div>
 
         {/* Status */}
-        <div className="bg-green-50 p-4 flex items-center justify-center gap-2 border-b border-green-100">
-          <CheckCircle2 size={18} className="text-green-600" />
-          <span className="text-green-700 font-bold text-sm">Payment Successful</span>
+        <div className="bg-green-50 p-3 flex items-center justify-center gap-2 border-b border-green-100">
+          <CheckCircle2 size={16} className="text-green-600" />
+          <span className="text-green-700 font-bold text-xs uppercase tracking-wider">Payment Successful</span>
         </div>
 
         {/* Amount */}
-        <div className="p-6 text-center border-b border-dashed border-gray-200">
-          <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total Amount Paid</p>
-          <h2 className="text-4xl font-black text-gray-900">₦{(tx.amount / 100).toLocaleString()}</h2>
-          <p className="text-sm text-gray-500 mt-1">{tx.votes_credited} Votes Credited</p>
+        <div className="p-8 text-center border-b border-dashed border-gray-200 relative">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Total Amount Paid</p>
+          <h2 className="text-4xl font-black text-gray-900 tracking-tight">₦{(tx.amount / 100).toLocaleString()}</h2>
+          <p className="text-xs text-gray-500 mt-2 font-semibold bg-gray-100 inline-block px-3 py-1 rounded-full">{tx.votes_credited} Votes Credited</p>
         </div>
 
         {/* Details */}
-        <div className="p-6 space-y-4 bg-gray-50/50">
+        <div className="p-6 space-y-4">
           <div className="flex justify-between items-start">
-            <span className="text-xs text-gray-500 font-bold">Reference</span>
-            <span className="text-xs font-mono font-bold text-gray-900">{tx.reference}</span>
+            <span className="text-[11px] text-gray-500 font-bold uppercase">Reference</span>
+            <span className="text-[11px] font-mono font-bold text-gray-900">{tx.reference}</span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-xs text-gray-500 font-bold">Date</span>
-            <span className="text-xs font-bold text-gray-900">{new Date(tx.created_at).toLocaleString()}</span>
+            <span className="text-[11px] text-gray-500 font-bold uppercase">Date</span>
+            <span className="text-[11px] font-bold text-gray-900">{new Date(tx.created_at).toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-xs text-gray-500 font-bold">Voter</span>
-            <span className="text-xs font-bold text-gray-900 truncate max-w-[200px]">{tx.voter_email}</span>
+            <span className="text-[11px] text-gray-500 font-bold uppercase">Voter</span>
+            <span className="text-[11px] font-bold text-gray-900 truncate max-w-[200px]">{tx.voter_email}</span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-xs text-gray-500 font-bold">Contestant</span>
-            <span className="text-xs font-bold text-gray-900">{contestant.stage_name || contestant.full_name}</span>
-          </div>
-          <div className="flex justify-between items-start">
-            <span className="text-xs text-gray-500 font-bold">ID</span>
-            <span className="text-xs font-bold text-gray-900">{contestant.contestant_id}</span>
+            <span className="text-[11px] text-gray-500 font-bold uppercase">Contestant</span>
+            <span className="text-[11px] font-bold text-gray-900 text-right">{contestant.stage_name || contestant.full_name}<br/><span className="text-[9px] text-gray-400">{contestant.contestant_id}</span></span>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-6 text-center border-t border-gray-100">
-          <p className="text-[10px] text-gray-400">Thank you for supporting TFTC Live Show 2027.</p>
-          <p className="text-[10px] text-gray-400 mt-1">Secured by Paystack</p>
+        <div className="p-6 text-center border-t border-gray-100 bg-gray-50/50">
+          <p className="text-[10px] text-gray-500 font-medium">Thank you for supporting TFTC Live Show 2027.</p>
+          <div className="mt-2 flex items-center justify-center gap-1 opacity-50">
+            <span className="text-[8px] font-bold uppercase tracking-widest">Secured by</span>
+            <span className="text-[10px] font-black text-black">Paystack</span>
+          </div>
         </div>
       </div>
     </div>

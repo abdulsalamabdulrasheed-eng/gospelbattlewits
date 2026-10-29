@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Logo } from '@/components/Logo';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function GeneralLogin() {
@@ -100,7 +101,7 @@ export default function GeneralLogin() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-md border">
         <div className="text-center mb-6">
-          <div className="bg-black text-white w-10 h-10 rounded-xl flex items-center justify-center text-xl font-black mx-auto mb-3">GB</div>
+          <div className="mx-auto mb-3 flex justify-center"><Logo size={48} showText={false} /></div>
           <h1 className="text-xl font-black text-gray-900">
             {showMfa ? 'Two-Factor Auth' : 'Welcome Back'}
           </h1>

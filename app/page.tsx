@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import Link from 'next/link';
+import { Logo } from '@/components/Logo';
 import { motion } from 'framer-motion';
 import { Crown, Trophy, Users, Star, Share2, Mail, LogIn } from 'lucide-react';
 
@@ -43,7 +44,7 @@ export default function Home() {
       <nav className="bg-black/80 backdrop-blur-md text-white p-4 sticky top-0 z-50 border-b border-gray-800">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="bg-yellow-500 text-black p-1 rounded font-black text-xs">GB</div>
+            <Logo size={32} showText={true} />
             <span className="font-black text-sm tracking-wider uppercase">TFTC 2027</span>
           </div>
           <div className="flex items-center gap-2 md:gap-4 text-xs font-bold">
@@ -172,7 +173,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="bg-yellow-500 text-black p-1 rounded font-black text-xs">GB</div>
+              <Logo size={32} showText={true} />
               <h3 className="text-white font-black text-lg uppercase">TFTC 2027</h3>
             </div>
             <p className="text-xs leading-relaxed">The Face & The Crown Live Show. A gospel competition designed to discover and celebrate talent.</p>

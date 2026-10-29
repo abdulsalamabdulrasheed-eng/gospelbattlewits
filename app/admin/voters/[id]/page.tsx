@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
-import { useParams } from 'next/navigation';
-import { Download, Receipt, Search, Users, ArrowLeft } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { Download, Search, Users, ArrowLeft, Receipt } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ContestantVoters() {
   const { id } = useParams();
+  const router = useRouter();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [contestant, setContestant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -56,8 +57,7 @@ export default function ContestantVoters() {
       <div className="p-10 text-center flex flex-col items-center justify-center h-full">
         <div className="bg-gray-100 p-4 rounded-full mb-4"><Users size={32} className="text-gray-400" /></div>
         <h2 className="text-xl font-black text-gray-900 mb-2">Contestant Not Found</h2>
-        <p className="text-gray-500 text-sm mb-6">This contestant may have been deleted or the ID is incorrect.</p>
-        <Link href="/admin/voters" className="bg-black text-white px-6 py-2 rounded-lg font-bold text-sm">← Back to Voters</Link>
+        <Link href="/admin/voters" className="bg-black text-white px-6 py-2 rounded-lg font-bold text-sm mt-4">← Back to Voters</Link>
       </div>
     );
   }
@@ -98,20 +98,24 @@ export default function ContestantVoters() {
                 <th className="p-4 font-bold text-gray-600 text-xs uppercase">Votes</th>
                 <th className="p-4 font-bold text-gray-600 text-xs uppercase text-right">Amount</th>
                 <th className="p-4 font-bold text-gray-600 text-xs uppercase">Date</th>
-                <th className="p-4 font-bold text-gray-600 text-xs uppercase text-right">Action</th>
+                <th className="p-4 font-bold text-gray-600 text-xs uppercase text-right">Receipt</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filtered.map(tx => (
-                <tr key={tx.id} className="hover:bg-gray-50">
+                <tr 
+                  key={tx.id} 
+                  onClick={() => router.push(`/admin/voters/${id}/receipt/${tx.id}`)}
+                  className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
+                >
                   <td className="p-4 font-semibold">{tx.voter_email}</td>
                   <td className="p-4"><span className="bg-black text-white px-2 py-1 rounded text-xs font-bold">+{tx.votes_credited}</span></td>
                   <td className="p-4 text-right font-black text-green-600">₦{(tx.amount / 100).toLocaleString()}</td>
                   <td className="p-4 text-gray-500 text-xs">{new Date(tx.created_at).toLocaleString()}</td>
                   <td className="p-4 text-right">
-                    <Link href={`/admin/voters/${id}/receipt/${tx.id}`} className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 justify-end ml-auto">
-                      <Receipt size={14}/> Receipt
-                    </Link>
+                    <span className="text-xs font-bold text-blue-600 group-hover:underline flex items-center gap-1 justify-end ml-auto">
+                      <Receipt size={14}/> View
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -121,7 +125,6 @@ export default function ContestantVoters() {
                     <div className="flex flex-col items-center justify-center">
                       <Users size={32} className="text-gray-300 mb-2" />
                       <p className="text-gray-500 font-bold">No voters found.</p>
-                      <p className="text-xs text-gray-400">This contestant has no votes yet.</p>
                     </div>
                   </td>
                 </tr>

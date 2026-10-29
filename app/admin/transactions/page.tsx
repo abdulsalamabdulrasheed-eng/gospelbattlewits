@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
+import { useRouter } from 'next/navigation';
 import { Search, Download, TrendingUp, Filter, Wallet, CreditCard, Receipt } from 'lucide-react';
-import Link from 'next/link';
 
 export default function Transactions() {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +45,6 @@ export default function Transactions() {
   }, [search, transactions, activeTab, sortBy]);
 
   const fetchTransactions = async () => {
-    // Fetch transactions and join with contestants to get the string ID
     const { data } = await supabase
       .from('transactions')
       .select(`
@@ -96,7 +96,6 @@ export default function Transactions() {
         </button>
       </div>
 
-      {/* 3-by-1 Revenue Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-1">
@@ -123,7 +122,6 @@ export default function Transactions() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
         {[
           { id: 'all', label: 'All Transactions' },
@@ -142,7 +140,6 @@ export default function Transactions() {
         ))}
       </div>
 
-      {/* Controls */}
       <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm mb-4 flex flex-col md:flex-row gap-3 justify-between items-center">
         <div className="relative w-full md:w-96">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -167,7 +164,6 @@ export default function Transactions() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
           <thead className="bg-gray-50 border-b border-gray-200">
@@ -177,37 +173,44 @@ export default function Transactions() {
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Type</th>
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider text-right">Amount (₦)</th>
               <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider">Date</th>
-              <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider text-right">Action</th>
+              <th className="p-4 font-bold text-gray-600 text-xs uppercase tracking-wider text-right">Receipt</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filtered.map((tx) => (
-              <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
-                <td className="p-4 font-mono text-xs text-gray-500">{tx.reference}</td>
-                <td className="p-4 font-semibold text-gray-900">{tx.voter_email}</td>
-                <td className="p-4">
-                  {tx.votes_credited > 0 ? (
-                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-100">+{tx.votes_credited} Votes</span>
-                  ) : (
-                    <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-bold border border-purple-100">Registration</span>
-                  )}
-                </td>
-                <td className="p-4 text-right font-black text-green-600">₦{(tx.amount / 100).toLocaleString()}</td>
-                <td className="p-4 text-gray-500 text-xs">{new Date(tx.created_at).toLocaleString()}</td>
-                <td className="p-4 text-right">
-                  {tx.contestants?.contestant_id ? (
-                    <Link 
-                      href={`/admin/voters/${tx.contestants.contestant_id}/receipt/${tx.id}`} 
-                      className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 justify-end ml-auto"
-                    >
-                      <Receipt size={14}/> Receipt
-                    </Link>
-                  ) : (
-                    <span className="text-xs text-gray-400">N/A</span>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {filtered.map((tx) => {
+              const receiptUrl = tx.contestants?.contestant_id 
+                ? `/admin/voters/${tx.contestants.contestant_id}/receipt/${tx.id}`
+                : null;
+
+              return (
+                <tr 
+                  key={tx.id} 
+                  onClick={() => receiptUrl && router.push(receiptUrl)}
+                  className={`hover:bg-blue-50/50 transition-colors ${receiptUrl ? 'cursor-pointer group' : ''}`}
+                >
+                  <td className="p-4 font-mono text-xs text-gray-500">{tx.reference}</td>
+                  <td className="p-4 font-semibold text-gray-900">{tx.voter_email}</td>
+                  <td className="p-4">
+                    {tx.votes_credited > 0 ? (
+                      <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-bold border border-blue-100">+{tx.votes_credited} Votes</span>
+                    ) : (
+                      <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-bold border border-purple-100">Registration</span>
+                    )}
+                  </td>
+                  <td className="p-4 text-right font-black text-green-600">₦{(tx.amount / 100).toLocaleString()}</td>
+                  <td className="p-4 text-gray-500 text-xs">{new Date(tx.created_at).toLocaleString()}</td>
+                  <td className="p-4 text-right">
+                    {receiptUrl ? (
+                      <span className="text-xs font-bold text-blue-600 group-hover:underline flex items-center gap-1 justify-end ml-auto">
+                        <Receipt size={14}/> View
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">N/A</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
             {filtered.length === 0 && (
               <tr><td colSpan={6} className="p-10 text-center text-gray-500">No transactions found.</td></tr>
             )}
